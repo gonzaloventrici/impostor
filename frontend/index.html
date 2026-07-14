@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Impostor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #14121A;
+    --surface: #1F1B29;
+    --surface-2: #29233A;
+    --text: #F5F3F0;
+    --muted: #8B8594;
+    --spy: #E63946;
+    --spy-dark: #7A1620;
+    --word: #F2C14E;
+    --word-dark: #8A6A12;
+    --radius: 18px;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Work Sans', sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 24px;
+  }
+
+  .app {
+    width: 100%;
+    max-width: 420px;
+  }
+
+  .display {
+    font-family: 'Bebas Neue', sans-serif;
+    letter-spacing: 0.04em;
+  }
+
+  h1.brand {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 3rem;
+    letter-spacing: 0.08em;
+    text-align: center;
+    margin: 0 0 8px;
+    color: var(--text);
+  }
+
+  .subtitle {
+    text-align: center;
+    color: var(--muted);
+    margin: 0 0 32px;
+    font-size: 0.95rem;
+  }
+
+  .card {
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 28px;
+    margin-bottom: 16px;
+  }
+
+  .mode-choice {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  button {
+    font-family: 'Work Sans', sans-serif;
+    font-weight: 600;
+    font-size: 1rem;
+    border: none;
+    border-radius: 12px;
+    padding: 16px 20px;
+    cursor: pointer;
+    transition: transform 0.15s ease, opacity 0.15s ease;
+  }
+
+  button:active { transform: scale(0.97); }
+
+  .btn-primary {
+    background: var(--word);
+    color: #26200A;
+  }
+
+  .btn-secondary {
+    background: var(--surface-2);
+    color: var(--text);
+  }
+
+  .btn-danger {
+    background: var(--spy);
+    color: #FCEBEC;
+  }
+
+  .btn-block { width: 100%; }
+
+  input[type="text"], input[type="number"], select {
+    width: 100%;
+    background: var(--surface-2);
+    border: 1px solid #3A3350;
+    color: var(--text);
+    border-radius: 10px;
+    padding: 14px;
+    font-size: 1rem;
+    font-family: 'Work Sans', sans-serif;
+    margin-bottom: 12px;
+  }
+
+  label {
+    display: block;
+    font-size: 0.85rem;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+
+  .player-list {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .player-list li {
+    background: var(--surface);
+    border: 1px solid #3A3350;
+    padding: 12px 14px;
+    border-radius: 10px;
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .room-code {
+    text-align: center;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2.5rem;
+    letter-spacing: 0.15em;
+    color: var(--word);
+    margin: 8px 0 20px;
+  }
+
+  .error {
+    background: rgba(230, 57, 70, 0.15);
+    border: 1px solid var(--spy);
+    color: #FCA5AC;
+    padding: 12px 14px;
+    border-radius: 10px;
+    margin-bottom: 16px;
+    font-size: 0.9rem;
+  }
+
+  .hidden { display: none !important; }
+
+  /* Pantalla "pasá el teléfono" */
+  .handoff {
+    text-align: center;
+    padding: 60px 20px;
+  }
+
+  .handoff .name {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2.8rem;
+    color: var(--text);
+    margin: 16px 0 32px;
+  }
+
+  /* Tarjeta de revelación */
+  .reveal-card {
+    aspect-ratio: 3/4;
+    border-radius: var(--radius);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 32px;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.3s ease;
+  }
+
+  .reveal-card.unrevealed {
+    background: linear-gradient(160deg, var(--surface-2), var(--surface));
+    border: 2px dashed #4A4260;
+  }
+
+  .reveal-card.unrevealed .hint {
+    color: var(--muted);
+    font-size: 1rem;
+  }
+
+  .reveal-card.spy {
+    background: linear-gradient(160deg, var(--spy), var(--spy-dark));
+  }
+
+  .reveal-card.word {
+    background: linear-gradient(160deg, var(--word), var(--word-dark));
+  }
+
+  .reveal-card .role-title {
+    font-size: 2.2rem;
+    margin-bottom: 12px;
+  }
+
+  .reveal-card.word .role-title,
+  .reveal-card.word .role-word { color: #26200A; }
+
+  .reveal-card.spy .role-title,
+  .reveal-card.spy .role-sub { color: #FCEBEC; }
+
+  .role-word {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2rem;
+    letter-spacing: 0.05em;
+  }
+
+  .role-sub { font-size: 0.95rem; opacity: 0.85; }
+
+  .top-nav {
+    text-align: left;
+    margin-bottom: 20px;
+  }
+
+  .top-nav button {
+    background: none;
+    color: var(--muted);
+    font-size: 0.85rem;
+    padding: 6px 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .top-nav button .arrow {
+    color: var(--word);
+    font-size: 1.1rem;
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <h1 class="brand">IMPOSTOR</h1>
+  <p class="subtitle">Uno no sabe la palabra. Descubran quién.</p>
+
+  <div id="error-box" class="error hidden"></div>
+
+  <!-- Pantalla: elegir modo -->
+  <div id="screen-mode" class="card">
+    <div class="mode-choice">
+      <button class="btn-primary btn-block" onclick="goLocal()">📱 Un dispositivo (pasar y jugar)</button>
+      <button class="btn-secondary btn-block" onclick="goOnlineHost()">🌐 Cada uno desde su celular</button>
+      <button class="btn-secondary btn-block" onclick="goOnlineJoin()">🔑 Unirme con un código</button>
+    </div>
+  </div>
+
+  <!-- Pantalla: armar sala (local u online-host) -->
+  <div id="screen-setup" class="card hidden">
+        <div class="top-nav"><button onclick="showScreen('mode')"><span style="color: #F2C14E; font-size: 1.0rem; font-weight: bold;">←</span>Volver</button></div>
+
+    <div id="room-code-display" class="room-code hidden"></div>
+
+    <label>Nombre del jugador</label>
+    <input type="text" id="input-player-name" placeholder="Ej: Nico">
+    <button class="btn-primary btn-block" onclick="addPlayer()" style="margin-bottom: 20px;">+ Agregar jugador</button>
+
+    <ul id="player-list" class="player-list"></ul>
+
+    <div id="online-join-hint" class="hidden" style="color: var(--muted); font-size: 0.85rem; margin-bottom: 16px;">
+      Compartí el código de sala. Cada jugador entra a esta misma página, toca "Unirme con un código" y carga su nombre.
+    </div>
+
+    <label>Cantidad de impostores</label>
+    <input type="number" id="input-num-spies" min="1" value="1">
+
+    <label>Categoría</label>
+    <select id="select-category"><option value="">Aleatoria</option></select>
+
+    <button class="btn-primary btn-block" onclick="startGame()" style="margin-top: 10px;">Empezar partida</button>
+  </div>
+
+  <!-- Pantalla: unirse a sala existente (online, no-host) -->
+  <div id="screen-join" class="card hidden">
+    <div class="top-nav"><button onclick="showScreen('mode')"><span style="color: #F2C14E; font-size: 1.0rem; font-weight: bold;">←</span>Volver</button></div>
+    <label>Código de sala</label>
+    <input type="text" id="input-join-code" placeholder="Ej: 7F3K2" style="text-transform: uppercase;">
+    <label>Tu nombre</label>
+    <input type="text" id="input-join-name" placeholder="Ej: Caro">
+    <button class="btn-primary btn-block" onclick="joinRoom()">Unirme</button>
+    <p id="join-waiting" class="hidden" style="text-align:center; color: var(--muted); margin-top: 16px;">
+      Esperando a que el host inicie la partida…
+    </p>
+  </div>
+
+  <!-- Pantalla: "pasá el teléfono a X" (solo modo local) -->
+  <div id="screen-handoff" class="handoff hidden">
+    <p style="color: var(--muted);">Pasále el dispositivo a</p>
+    <div class="name" id="handoff-name"></div>
+    <button class="btn-primary" onclick="showRevealForCurrent()">Ya lo tengo, mostrar mi rol</button>
+  </div>
+
+  <!-- Pantalla: revelación de rol -->
+  <div id="screen-reveal" class="hidden">
+    <div id="reveal-card" class="reveal-card unrevealed" onclick="flipCard()">
+      <div class="hint">Tocá para ver tu rol</div>
+    </div>
+    <button id="btn-next-player" class="btn-secondary btn-block hidden" style="margin-top:16px;" onclick="nextLocalPlayer()">Siguiente jugador</button>
+    <button id="btn-play-again" class="btn-primary btn-block hidden" style="margin-top:16px;" onclick="resetToLobby()">Jugar de nuevo</button>
+  </div>
+</div>
+
+<script>
+  // Cambiar esta URL si el backend corre en otro host/puerto
+  const API_BASE = "http://localhost:8000";
+
+  let mode = null;        // "local" | "online-host" | "online-join"
+  let roomCode = null;
+  let hostToken = null;
+  let localPlayers = [];  // {player_id, name, token} — solo modo local
+  let localIndex = 0;
+  let joinPlayerId = null;
+  let joinToken = null;
+
+  function showScreen(name) {
+    document.querySelectorAll('.card, .handoff, #screen-reveal').forEach(el => el.classList.add('hidden'));
+    document.getElementById('screen-' + name).classList.remove('hidden');
+    hideError();
+  }
+
+  function showError(msg) {
+    const box = document.getElementById('error-box');
+    box.textContent = msg;
+    box.classList.remove('hidden');
+  }
+  function hideError() {
+    document.getElementById('error-box').classList.add('hidden');
+  }
+
+  async function loadCategories() {
+    try {
+      const res = await fetch(`${API_BASE}/categories`);
+      const categories = await res.json();
+      const select = document.getElementById('select-category');
+      select.innerHTML = '<option value="">Aleatoria</option>';
+      categories.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c.id;
+        opt.textContent = c.name;
+        select.appendChild(opt);
+      });
+    } catch (e) {
+      console.warn("No se pudieron cargar categorías (¿backend corriendo?)", e);
+    }
+  }
+
+  // ---------- Modo local ----------
+  async function goLocal() {
+    mode = "local";
+    localPlayers = [];
+    document.getElementById('room-code-display').classList.add('hidden');
+    document.getElementById('online-join-hint').classList.add('hidden');
+    const res = await fetch(`${API_BASE}/rooms`, { method: 'POST' });
+    const data = await res.json();
+    roomCode = data.room_code;
+    hostToken = data.host_token;
+    renderPlayerList();
+    loadCategories();
+    showScreen('setup');
+  }
+
+  // ---------- Modo online (host) ----------
+  async function goOnlineHost() {
+    mode = "online-host";
+    localPlayers = [];
+    const res = await fetch(`${API_BASE}/rooms`, { method: 'POST' });
+    const data = await res.json();
+    roomCode = data.room_code;
+    hostToken = data.host_token;
+    document.getElementById('room-code-display').textContent = roomCode;
+    document.getElementById('room-code-display').classList.remove('hidden');
+    document.getElementById('online-join-hint').classList.remove('hidden');
+    renderPlayerList();
+    loadCategories();
+    showScreen('setup');
+  }
+
+  async function addPlayer() {
+    const input = document.getElementById('input-player-name');
+    const name = input.value.trim();
+    if (!name) return;
+
+    try {
+      const res = await fetch(`${API_BASE}/rooms/${roomCode}/join`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name })
+      });
+      if (!res.ok) throw new Error((await res.json()).detail);
+      const data = await res.json();
+      localPlayers.push({ player_id: data.player_id, name, token: data.player_token });
+      input.value = '';
+      renderPlayerList();
+      hideError();
+    } catch (e) {
+      showError(e.message);
+    }
+  }
+
+  function renderPlayerList() {
+    const ul = document.getElementById('player-list');
+    ul.innerHTML = '';
+    localPlayers.forEach(p => {
+      const li = document.createElement('li');
+      li.textContent = p.name;
+      ul.appendChild(li);
+    });
+  }
+
+  async function startGame() {
+    const numSpies = parseInt(document.getElementById('input-num-spies').value, 10);
+    const categoryValue = document.getElementById('select-category').value;
+    const categoryId = categoryValue ? parseInt(categoryValue, 10) : null;
+
+    try {
+      const res = await fetch(`${API_BASE}/rooms/${roomCode}/start`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ host_token: hostToken, num_spies: numSpies, category_id: categoryId })
+      });
+      if (!res.ok) throw new Error((await res.json()).detail);
+
+      if (mode === "local") {
+        localIndex = 0;
+        showHandoffForCurrent();
+      } else {
+        showScreen('setup'); // el host ya inició; los demás ven su rol desde /join
+        showError("Partida iniciada. Cada jugador ya puede ver su rol desde su propio dispositivo.");
+      }
+    } catch (e) {
+      showError(e.message);
+    }
+  }
+
+  // ---------- Modo local: secuencia de reveal ----------
+  function showHandoffForCurrent() {
+    const player = localPlayers[localIndex];
+    document.getElementById('handoff-name').textContent = player.name;
+    showScreen('handoff');
+  }
+
+  function showRevealForCurrent() {
+    showScreen('reveal');
+    resetCard();
+    document.getElementById('btn-next-player').classList.toggle('hidden', localIndex >= localPlayers.length - 1);
+    document.getElementById('btn-play-again').classList.toggle('hidden', localIndex < localPlayers.length - 1);
+  }
+
+  function resetCard() {
+    const card = document.getElementById('reveal-card');
+    card.className = 'reveal-card unrevealed';
+    card.innerHTML = '<div class="hint">Tocá para ver tu rol</div>';
+    card.dataset.flipped = "false";
+  }
+
+  async function flipCard() {
+    const card = document.getElementById('reveal-card');
+    if (card.dataset.flipped === "true") return;
+
+    const player = localPlayers[localIndex];
+    try {
+      const res = await fetch(
+        `${API_BASE}/rooms/${roomCode}/players/${player.player_id}/role?player_token=${player.token}`
+      );
+      if (!res.ok) throw new Error((await res.json()).detail);
+      const data = await res.json();
+      renderRole(card, data);
+      card.dataset.flipped = "true";
+    } catch (e) {
+      showError(e.message);
+    }
+  }
+
+  function renderRole(card, data) {
+    if (data.is_spy) {
+      card.className = 'reveal-card spy';
+      card.innerHTML = `
+        <div class="role-title display">SOS EL<br>IMPOSTOR</div>
+        <div class="role-sub">No sabés la palabra. Disimulá.</div>`;
+    } else {
+      card.className = 'reveal-card word';
+      card.innerHTML = `
+        <div class="role-title display">LA PALABRA ES</div>
+        <div class="role-word">${data.word.toUpperCase()}</div>`;
+    }
+  }
+
+  function nextLocalPlayer() {
+    localIndex++;
+    showHandoffForCurrent();
+  }
+
+  async function resetToLobby() {
+    await fetch(`${API_BASE}/rooms/${roomCode}/reset?host_token=${hostToken}`, { method: 'POST' });
+    renderPlayerList();
+    showScreen('setup');
+  }
+
+  // ---------- Modo online (unirse con código) ----------
+  function goOnlineJoin() {
+    mode = "online-join";
+    showScreen('join');
+  }
+
+  async function joinRoom() {
+    const code = document.getElementById('input-join-code').value.trim().toUpperCase();
+    const name = document.getElementById('input-join-name').value.trim();
+    if (!code || !name) return;
+
+    try {
+      const res = await fetch(`${API_BASE}/rooms/${code}/join`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name })
+      });
+      if (!res.ok) throw new Error((await res.json()).detail);
+      const data = await res.json();
+      roomCode = code;
+      joinPlayerId = data.player_id;
+      joinToken = data.player_token;
+      hideError();
+      document.getElementById('join-waiting').classList.remove('hidden');
+      pollForStart();
+    } catch (e) {
+      showError(e.message);
+    }
+  }
+
+  async function pollForStart() {
+    try {
+      const res = await fetch(`${API_BASE}/rooms/${roomCode}`);
+      const data = await res.json();
+      if (data.status === "started") {
+        showScreen('reveal');
+        document.getElementById('btn-next-player').classList.add('hidden');
+        document.getElementById('btn-play-again').classList.add('hidden');
+        resetCard();
+        return;
+      }
+    } catch (e) { /* seguimos intentando */ }
+    setTimeout(pollForStart, 1500);
+  }
+
+  // Sobreescribimos flipCard para el caso online-join (usa joinPlayerId/joinToken)
+  const originalFlipCard = flipCard;
+  flipCard = async function () {
+    if (mode !== "online-join") return originalFlipCard();
+
+    const card = document.getElementById('reveal-card');
+    if (card.dataset.flipped === "true") return;
+
+    try {
+      const res = await fetch(
+        `${API_BASE}/rooms/${roomCode}/players/${joinPlayerId}/role?player_token=${joinToken}`
+      );
+      if (!res.ok) throw new Error((await res.json()).detail);
+      const data = await res.json();
+      renderRole(card, data);
+      card.dataset.flipped = "true";
+    } catch (e) {
+      showError(e.message);
+    }
+  };
+
+  showScreen('mode');
+</script>
+
+</body>
+</html>

@@ -1,3 +1,4 @@
+README.md
 pyproject.toml
 src/impostor/__init__.py
 src/impostor/cli.py

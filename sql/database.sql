@@ -17,14 +17,14 @@ CREATE TABLE words (
     FOREIGN KEY (category_id) REFERENCES categories(id)
 ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
--- Insertando categorias
+-- Categorias
 INSERT INTO categories (name) VALUES
 ('Lugar'),
 ('Objeto'),
 ('Comida'),
 ('Animal');
 
--- Insertando lugares
+-- Lugares
 INSERT INTO words (word, category_id) VALUES
 ('obra en construcción',1),
 ('estacionamiento',1),
@@ -57,7 +57,7 @@ INSERT INTO words (word, category_id) VALUES
 ('banco',1),
 ('farmacia',1);
 
--- Insertando objetos
+-- Objetos
 INSERT INTO words (word, category_id) VALUES
 ('guitarra',2),
 ('teléfono',2),
@@ -83,7 +83,7 @@ INSERT INTO words (word, category_id) VALUES
 ('tijera',2),
 ('auriculares',2);
 
--- Insertando comida
+-- Comida
 INSERT INTO words (word, category_id) VALUES
 ('pizza',3),
 ('empanadas',3),
@@ -107,7 +107,7 @@ INSERT INTO words (word, category_id) VALUES
 ('ramen',3),
 ('guiso',3);
 
--- Insertando animales
+-- Animales
 INSERT INTO words (word, category_id) VALUES
 ('perro',4),
 ('gato',4),
