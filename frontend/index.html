@@ -34,15 +34,7 @@
     padding: 24px;
   }
 
-  .app {
-    width: 100%;
-    max-width: 420px;
-  }
-
-  .display {
-    font-family: 'Bebas Neue', sans-serif;
-    letter-spacing: 0.04em;
-  }
+  .app { width: 100%; max-width: 420px; }
 
   h1.brand {
     font-family: 'Bebas Neue', sans-serif;
@@ -50,7 +42,6 @@
     letter-spacing: 0.08em;
     text-align: center;
     margin: 0 0 8px;
-    color: var(--text);
   }
 
   .subtitle {
@@ -67,11 +58,7 @@
     margin-bottom: 16px;
   }
 
-  .mode-choice {
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-  }
+  .mode-choice { display: flex; flex-direction: column; gap: 14px; }
 
   button {
     font-family: 'Work Sans', sans-serif;
@@ -83,24 +70,11 @@
     cursor: pointer;
     transition: transform 0.15s ease, opacity 0.15s ease;
   }
-
   button:active { transform: scale(0.97); }
 
-  .btn-primary {
-    background: var(--word);
-    color: #26200A;
-  }
-
-  .btn-secondary {
-    background: var(--surface-2);
-    color: var(--text);
-  }
-
-  .btn-danger {
-    background: var(--spy);
-    color: #FCEBEC;
-  }
-
+  .btn-primary { background: var(--word); color: #26200A; }
+  .btn-secondary { background: var(--surface-2); color: var(--text); }
+  .btn-danger { background: var(--spy); color: #FCEBEC; }
   .btn-block { width: 100%; }
 
   input[type="text"], input[type="number"], select {
@@ -161,20 +135,13 @@
 
   .hidden { display: none !important; }
 
-  /* Pantalla "pasá el teléfono" */
-  .handoff {
-    text-align: center;
-    padding: 60px 20px;
-  }
-
+  .handoff { text-align: center; padding: 60px 20px; }
   .handoff .name {
     font-family: 'Bebas Neue', sans-serif;
     font-size: 2.8rem;
-    color: var(--text);
     margin: 16px 0 32px;
   }
 
-  /* Tarjeta de revelación */
   .reveal-card {
     aspect-ratio: 3/4;
     border-radius: var(--radius);
@@ -188,49 +155,20 @@
     user-select: none;
     transition: background 0.3s ease;
   }
-
   .reveal-card.unrevealed {
     background: linear-gradient(160deg, var(--surface-2), var(--surface));
     border: 2px dashed #4A4260;
   }
-
-  .reveal-card.unrevealed .hint {
-    color: var(--muted);
-    font-size: 1rem;
-  }
-
-  .reveal-card.spy {
-    background: linear-gradient(160deg, var(--spy), var(--spy-dark));
-  }
-
-  .reveal-card.word {
-    background: linear-gradient(160deg, var(--word), var(--word-dark));
-  }
-
-  .reveal-card .role-title {
-    font-size: 2.2rem;
-    margin-bottom: 12px;
-  }
-
-  .reveal-card.word .role-title,
-  .reveal-card.word .role-word { color: #26200A; }
-
-  .reveal-card.spy .role-title,
-  .reveal-card.spy .role-sub { color: #FCEBEC; }
-
-  .role-word {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 2rem;
-    letter-spacing: 0.05em;
-  }
-
+  .reveal-card.unrevealed .hint { color: var(--muted); font-size: 1rem; }
+  .reveal-card.spy { background: linear-gradient(160deg, var(--spy), var(--spy-dark)); }
+  .reveal-card.word { background: linear-gradient(160deg, var(--word), var(--word-dark)); }
+  .reveal-card .role-title { font-size: 2.2rem; margin-bottom: 12px; }
+  .reveal-card.word .role-title, .reveal-card.word .role-word { color: #26200A; }
+  .reveal-card.spy .role-title, .reveal-card.spy .role-sub { color: #FCEBEC; }
+  .role-word { font-family: 'Bebas Neue', sans-serif; font-size: 2rem; letter-spacing: 0.05em; }
   .role-sub { font-size: 0.95rem; opacity: 0.85; }
 
-  .top-nav {
-    text-align: left;
-    margin-bottom: 20px;
-  }
-
+  .top-nav { text-align: left; margin-bottom: 20px; }
   .top-nav button {
     background: none;
     color: var(--muted);
@@ -240,11 +178,14 @@
     align-items: center;
     gap: 6px;
   }
-
   .top-nav button .arrow {
     color: var(--word);
-    font-size: 1.1rem;
+    font-size: 1.3rem;
+    text-shadow: 0 0 1px var(--word), 0 0 1px var(--word), 0.5px 0 0 var(--word), -0.5px 0 0 var(--word);
   }
+
+  .waiting-text { text-align:center; color: var(--muted); margin-top: 16px; }
+  .status-ok { text-align:center; color: var(--word); font-weight:600; margin-bottom: 6px; }
 </style>
 </head>
 <body>
@@ -264,11 +205,9 @@
     </div>
   </div>
 
-  <!-- Pantalla: armar sala (local u online-host) -->
+  <!-- Pantalla: modo LOCAL (el host carga a todos los jugadores) -->
   <div id="screen-setup" class="card hidden">
-        <div class="top-nav"><button onclick="showScreen('mode')"><span style="color: #F2C14E; font-size: 1.0rem; font-weight: bold;">←</span>Volver</button></div>
-
-    <div id="room-code-display" class="room-code hidden"></div>
+    <div class="top-nav"><button onclick="showScreen('mode')"><span class="arrow">←</span> Volver</button></div>
 
     <label>Nombre del jugador</label>
     <input type="text" id="input-player-name" placeholder="Ej: Nico">
@@ -276,30 +215,56 @@
 
     <ul id="player-list" class="player-list"></ul>
 
-    <div id="online-join-hint" class="hidden" style="color: var(--muted); font-size: 0.85rem; margin-bottom: 16px;">
-      Compartí el código de sala. Cada jugador entra a esta misma página, toca "Unirme con un código" y carga su nombre.
-    </div>
-
     <label>Cantidad de impostores</label>
     <input type="number" id="input-num-spies" min="1" value="1">
 
     <label>Categoría</label>
     <select id="select-category"><option value="">Aleatoria</option></select>
 
-    <button class="btn-primary btn-block" onclick="startGame()" style="margin-top: 10px;">Empezar partida</button>
+    <button class="btn-primary btn-block" onclick="startLocalGame()" style="margin-top: 10px;">Empezar partida</button>
+  </div>
+
+  <!-- Pantalla: modo ONLINE HOST -->
+  <div id="screen-online-host" class="card hidden">
+    <div class="top-nav"><button onclick="showScreen('mode')"><span class="arrow">←</span> Volver</button></div>
+
+    <!-- Paso 1: el host carga su propio nombre -->
+    <div id="host-join-step">
+      <label>Tu nombre</label>
+      <input type="text" id="input-host-name" placeholder="Ej: Gonzalo">
+      <button class="btn-primary btn-block" onclick="hostJoin()">Crear sala</button>
+    </div>
+
+    <!-- Paso 2: sala creada, esperando jugadores + configuración -->
+    <div id="host-lobby-step" class="hidden">
+      <div class="room-code" id="host-room-code"></div>
+      <p style="text-align:center; color: var(--muted); font-size: 0.85rem; margin-bottom: 20px;">
+        Compartí este código. Cada jugador entra a esta misma página, toca
+        "Unirme con un código" y carga su propio nombre.
+      </p>
+
+      <label>Jugadores en la sala</label>
+      <ul id="host-players-list" class="player-list"></ul>
+
+      <label>Cantidad de impostores</label>
+      <input type="number" id="input-host-num-spies" min="1" value="1">
+
+      <label>Categoría</label>
+      <select id="select-host-category"><option value="">Aleatoria</option></select>
+
+      <button class="btn-primary btn-block" onclick="startOnlineGame()" style="margin-top: 10px;">Empezar partida</button>
+    </div>
   </div>
 
   <!-- Pantalla: unirse a sala existente (online, no-host) -->
   <div id="screen-join" class="card hidden">
-    <div class="top-nav"><button onclick="showScreen('mode')"><span style="color: #F2C14E; font-size: 1.0rem; font-weight: bold;">←</span>Volver</button></div>
+    <div class="top-nav"><button onclick="showScreen('mode')"><span class="arrow">←</span> Volver</button></div>
     <label>Código de sala</label>
     <input type="text" id="input-join-code" placeholder="Ej: 7F3K2" style="text-transform: uppercase;">
     <label>Tu nombre</label>
     <input type="text" id="input-join-name" placeholder="Ej: Caro">
     <button class="btn-primary btn-block" onclick="joinRoom()">Unirme</button>
-    <p id="join-waiting" class="hidden" style="text-align:center; color: var(--muted); margin-top: 16px;">
-      Esperando a que el host inicie la partida…
-    </p>
+    <p id="join-waiting" class="waiting-text hidden">Esperando a que el host inicie la partida…</p>
   </div>
 
   <!-- Pantalla: "pasá el teléfono a X" (solo modo local) -->
@@ -321,20 +286,34 @@
 
 <script>
   // Cambiar esta URL si el backend corre en otro host/puerto
-  const API_BASE = "http://localhost:8000";
+  const API_BASE = "http://192.168.0.232:8000";
 
   let mode = null;        // "local" | "online-host" | "online-join"
   let roomCode = null;
-  let hostToken = null;
-  let localPlayers = [];  // {player_id, name, token} — solo modo local
+  let hostToken = null;   // token de administración de la sala (solo online-host)
+
+  // Modo local: un dispositivo cicla por varios jugadores
+  let localPlayers = [];  // {player_id, name, token}
   let localIndex = 0;
-  let joinPlayerId = null;
-  let joinToken = null;
+
+  // Modo online (host jugando o alguien que se unió con código):
+  // cada dispositivo solo necesita SU PROPIO player_id/token
+  let myPlayerId = null;
+  let myToken = null;
+
+  let hostPollTimer = null;
+  let joinPollTimer = null;
 
   function showScreen(name) {
     document.querySelectorAll('.card, .handoff, #screen-reveal').forEach(el => el.classList.add('hidden'));
     document.getElementById('screen-' + name).classList.remove('hidden');
     hideError();
+    stopAllPolling();
+  }
+
+  function stopAllPolling() {
+    if (hostPollTimer) { clearInterval(hostPollTimer); hostPollTimer = null; }
+    if (joinPollTimer) { clearTimeout(joinPollTimer); joinPollTimer = null; }
   }
 
   function showError(msg) {
@@ -346,11 +325,11 @@
     document.getElementById('error-box').classList.add('hidden');
   }
 
-  async function loadCategories() {
+  async function loadCategoriesInto(selectId) {
     try {
       const res = await fetch(`${API_BASE}/categories`);
       const categories = await res.json();
-      const select = document.getElementById('select-category');
+      const select = document.getElementById(selectId);
       select.innerHTML = '<option value="">Aleatoria</option>';
       categories.forEach(c => {
         const opt = document.createElement('option');
@@ -363,35 +342,22 @@
     }
   }
 
-  // ---------- Modo local ----------
+  // ==================== MODO LOCAL ====================
   async function goLocal() {
-    mode = "local";
-    localPlayers = [];
-    document.getElementById('room-code-display').classList.add('hidden');
-    document.getElementById('online-join-hint').classList.add('hidden');
-    const res = await fetch(`${API_BASE}/rooms`, { method: 'POST' });
-    const data = await res.json();
-    roomCode = data.room_code;
-    hostToken = data.host_token;
-    renderPlayerList();
-    loadCategories();
-    showScreen('setup');
-  }
-
-  // ---------- Modo online (host) ----------
-  async function goOnlineHost() {
-    mode = "online-host";
-    localPlayers = [];
-    const res = await fetch(`${API_BASE}/rooms`, { method: 'POST' });
-    const data = await res.json();
-    roomCode = data.room_code;
-    hostToken = data.host_token;
-    document.getElementById('room-code-display').textContent = roomCode;
-    document.getElementById('room-code-display').classList.remove('hidden');
-    document.getElementById('online-join-hint').classList.remove('hidden');
-    renderPlayerList();
-    loadCategories();
-    showScreen('setup');
+    try {
+      mode = "local";
+      localPlayers = [];
+      const res = await fetch(`${API_BASE}/rooms`, { method: 'POST' });
+      if (!res.ok) throw new Error("Error del servidor: " + res.status);
+      const data = await res.json();
+      roomCode = data.room_code;
+      hostToken = data.host_token;
+      renderPlayerList();
+      loadCategoriesInto('select-category');
+      showScreen('setup');
+    } catch (e) {
+      showError("No se pudo conectar al servidor: " + e.message);
+    }
   }
 
   async function addPlayer() {
@@ -426,7 +392,7 @@
     });
   }
 
-  async function startGame() {
+  async function startLocalGame() {
     const numSpies = parseInt(document.getElementById('input-num-spies').value, 10);
     const categoryValue = document.getElementById('select-category').value;
     const categoryId = categoryValue ? parseInt(categoryValue, 10) : null;
@@ -438,20 +404,13 @@
         body: JSON.stringify({ host_token: hostToken, num_spies: numSpies, category_id: categoryId })
       });
       if (!res.ok) throw new Error((await res.json()).detail);
-
-      if (mode === "local") {
-        localIndex = 0;
-        showHandoffForCurrent();
-      } else {
-        showScreen('setup'); // el host ya inició; los demás ven su rol desde /join
-        showError("Partida iniciada. Cada jugador ya puede ver su rol desde su propio dispositivo.");
-      }
+      localIndex = 0;
+      showHandoffForCurrent();
     } catch (e) {
       showError(e.message);
     }
   }
 
-  // ---------- Modo local: secuencia de reveal ----------
   function showHandoffForCurrent() {
     const player = localPlayers[localIndex];
     document.getElementById('handoff-name').textContent = player.name;
@@ -465,59 +424,105 @@
     document.getElementById('btn-play-again').classList.toggle('hidden', localIndex < localPlayers.length - 1);
   }
 
-  function resetCard() {
-    const card = document.getElementById('reveal-card');
-    card.className = 'reveal-card unrevealed';
-    card.innerHTML = '<div class="hint">Tocá para ver tu rol</div>';
-    card.dataset.flipped = "false";
-  }
-
-  async function flipCard() {
-    const card = document.getElementById('reveal-card');
-    if (card.dataset.flipped === "true") return;
-
-    const player = localPlayers[localIndex];
-    try {
-      const res = await fetch(
-        `${API_BASE}/rooms/${roomCode}/players/${player.player_id}/role?player_token=${player.token}`
-      );
-      if (!res.ok) throw new Error((await res.json()).detail);
-      const data = await res.json();
-      renderRole(card, data);
-      card.dataset.flipped = "true";
-    } catch (e) {
-      showError(e.message);
-    }
-  }
-
-  function renderRole(card, data) {
-    if (data.is_spy) {
-      card.className = 'reveal-card spy';
-      card.innerHTML = `
-        <div class="role-title display">SOS EL<br>IMPOSTOR</div>
-        <div class="role-sub">No sabés la palabra. Disimulá.</div>`;
-    } else {
-      card.className = 'reveal-card word';
-      card.innerHTML = `
-        <div class="role-title display">LA PALABRA ES</div>
-        <div class="role-word">${data.word.toUpperCase()}</div>`;
-    }
-  }
-
   function nextLocalPlayer() {
     localIndex++;
     showHandoffForCurrent();
   }
 
-  async function resetToLobby() {
-    await fetch(`${API_BASE}/rooms/${roomCode}/reset?host_token=${hostToken}`, { method: 'POST' });
-    renderPlayerList();
-    showScreen('setup');
+  // ==================== MODO ONLINE - HOST ====================
+  async function goOnlineHost() {
+    try {
+      mode = "online-host";
+      document.getElementById('host-join-step').classList.remove('hidden');
+      document.getElementById('host-lobby-step').classList.add('hidden');
+      document.getElementById('input-host-name').value = '';
+
+      const res = await fetch(`${API_BASE}/rooms`, { method: 'POST' });
+      if (!res.ok) throw new Error("Error del servidor: " + res.status);
+      const data = await res.json();
+      roomCode = data.room_code;
+      hostToken = data.host_token;
+      showScreen('online-host');
+    } catch (e) {
+      showError("No se pudo conectar al servidor: " + e.message);
+    }
   }
 
-  // ---------- Modo online (unirse con código) ----------
+  async function hostJoin() {
+    const name = document.getElementById('input-host-name').value.trim();
+    if (!name) return;
+
+    try {
+      const res = await fetch(`${API_BASE}/rooms/${roomCode}/join`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name })
+      });
+      if (!res.ok) throw new Error((await res.json()).detail);
+      const data = await res.json();
+      myPlayerId = data.player_id;
+      myToken = data.player_token;
+
+      document.getElementById('host-room-code').textContent = roomCode;
+      document.getElementById('host-join-step').classList.add('hidden');
+      document.getElementById('host-lobby-step').classList.remove('hidden');
+      loadCategoriesInto('select-host-category');
+      startHostPolling();
+      hideError();
+    } catch (e) {
+      showError(e.message);
+    }
+  }
+
+  function startHostPolling() {
+    refreshHostPlayers();
+    hostPollTimer = setInterval(refreshHostPlayers, 2000);
+  }
+
+  async function refreshHostPlayers() {
+    try {
+      const res = await fetch(`${API_BASE}/rooms/${roomCode}`);
+      const data = await res.json();
+      const ul = document.getElementById('host-players-list');
+      ul.innerHTML = '';
+      data.players.forEach(p => {
+        const li = document.createElement('li');
+        li.textContent = p.name;
+        ul.appendChild(li);
+      });
+    } catch (e) { /* seguimos intentando en el próximo tick */ }
+  }
+
+  async function startOnlineGame() {
+    const numSpies = parseInt(document.getElementById('input-host-num-spies').value, 10);
+    const categoryValue = document.getElementById('select-host-category').value;
+    const categoryId = categoryValue ? parseInt(categoryValue, 10) : null;
+
+    try {
+      const res = await fetch(`${API_BASE}/rooms/${roomCode}/start`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ host_token: hostToken, num_spies: numSpies, category_id: categoryId })
+      });
+      if (!res.ok) throw new Error((await res.json()).detail);
+
+      if (hostPollTimer) { clearInterval(hostPollTimer); hostPollTimer = null; }
+
+      showScreen('reveal');
+      resetCard();
+      document.getElementById('btn-next-player').classList.add('hidden');
+      document.getElementById('btn-play-again').classList.remove('hidden');
+    } catch (e) {
+      showError(e.message);
+    }
+  }
+
+  // ==================== MODO ONLINE - UNIRSE CON CÓDIGO ====================
   function goOnlineJoin() {
     mode = "online-join";
+    document.getElementById('input-join-code').value = '';
+    document.getElementById('input-join-name').value = '';
+    document.getElementById('join-waiting').classList.add('hidden');
     showScreen('join');
   }
 
@@ -535,8 +540,8 @@
       if (!res.ok) throw new Error((await res.json()).detail);
       const data = await res.json();
       roomCode = code;
-      joinPlayerId = data.player_id;
-      joinToken = data.player_token;
+      myPlayerId = data.player_id;
+      myToken = data.player_token;
       hideError();
       document.getElementById('join-waiting').classList.remove('hidden');
       pollForStart();
@@ -552,34 +557,96 @@
       if (data.status === "started") {
         showScreen('reveal');
         document.getElementById('btn-next-player').classList.add('hidden');
-        document.getElementById('btn-play-again').classList.add('hidden');
+        document.getElementById('btn-play-again').classList.remove('hidden');
         resetCard();
         return;
       }
     } catch (e) { /* seguimos intentando */ }
-    setTimeout(pollForStart, 1500);
+    joinPollTimer = setTimeout(pollForStart, 1500);
   }
 
-  // Sobreescribimos flipCard para el caso online-join (usa joinPlayerId/joinToken)
-  const originalFlipCard = flipCard;
-  flipCard = async function () {
-    if (mode !== "online-join") return originalFlipCard();
+  // ==================== REVELACIÓN DE ROL (compartida) ====================
+  let cachedRole = null;
 
+  function resetCard() {
     const card = document.getElementById('reveal-card');
-    if (card.dataset.flipped === "true") return;
+    card.className = 'reveal-card unrevealed';
+    card.innerHTML = '<div class="hint">Tocá para ver tu rol</div>';
+    card.dataset.state = "hidden";
+    cachedRole = null;
+  }
+
+  function renderRole(card, data) {
+    if (data.is_spy) {
+      card.className = 'reveal-card spy';
+      card.innerHTML = `
+        <div class="role-title">SOS EL<br>IMPOSTOR</div>
+        <div class="role-sub">No sabés la palabra. Disimulá.</div>`;
+    } else {
+      card.className = 'reveal-card word';
+      card.innerHTML = `
+        <div class="role-title">LA PALABRA ES</div>
+        <div class="role-word">${data.word.toUpperCase()}</div>`;
+    }
+  }
+
+  async function flipCard() {
+    const card = document.getElementById('reveal-card');
+
+    // Si ya está revelada, la próxima vez que tocan la ocultamos
+    if (card.dataset.state === "revealed") {
+      card.className = 'reveal-card unrevealed';
+      card.innerHTML = '<div class="hint">Tocá para volver a ver tu rol</div>';
+      card.dataset.state = "hidden";
+      return;
+    }
+
+    // Si ya la pedimos antes, no volvemos a llamar al servidor
+    if (cachedRole) {
+      renderRole(card, cachedRole);
+      card.dataset.state = "revealed";
+      return;
+    }
+
+    const playerId = (mode === "local") ? localPlayers[localIndex].player_id : myPlayerId;
+    const token = (mode === "local") ? localPlayers[localIndex].token : myToken;
 
     try {
       const res = await fetch(
-        `${API_BASE}/rooms/${roomCode}/players/${joinPlayerId}/role?player_token=${joinToken}`
+        `${API_BASE}/rooms/${roomCode}/players/${playerId}/role?player_token=${token}`
       );
       if (!res.ok) throw new Error((await res.json()).detail);
       const data = await res.json();
+      cachedRole = data;
       renderRole(card, data);
-      card.dataset.flipped = "true";
+      card.dataset.state = "revealed";
     } catch (e) {
       showError(e.message);
     }
-  };
+  }
+
+  // ==================== VOLVER A JUGAR ====================
+  async function resetToLobby() {
+    try {
+      if (mode === "local") {
+        await fetch(`${API_BASE}/rooms/${roomCode}/reset?host_token=${hostToken}`, { method: 'POST' });
+        renderPlayerList();
+        showScreen('setup');
+      } else if (mode === "online-host") {
+        await fetch(`${API_BASE}/rooms/${roomCode}/reset?host_token=${hostToken}`, { method: 'POST' });
+        document.getElementById('host-lobby-step').classList.remove('hidden');
+        showScreen('online-host');
+        startHostPolling();
+      } else {
+        // online-join: solo esperamos a que el host arranque otra ronda
+        showScreen('join');
+        document.getElementById('join-waiting').classList.remove('hidden');
+        pollForStart();
+      }
+    } catch (e) {
+      showError(e.message);
+    }
+  }
 
   showScreen('mode');
 </script>
