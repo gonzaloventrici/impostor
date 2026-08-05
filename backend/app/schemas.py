@@ -23,14 +23,17 @@ class PlayerOut(BaseModel):
 
 class RoomStateResponse(BaseModel):
     room_code: str
-    status: str  # "lobby" | "started"
+    status: str
     players: list[PlayerOut]
 
 
 class StartGameRequest(BaseModel):
     host_token: str
     num_spies: int
-    category_id: Optional[int] = None  # None = aleatoria
+    category_id: Optional[int] = None
+    discuss_seconds: Optional[int] = 60
+    vote_seconds: Optional[int] = 45
+    rounds_to_win: Optional[int] = None
 
 
 class CategoryOut(BaseModel):
@@ -40,4 +43,10 @@ class CategoryOut(BaseModel):
 
 class MyRoleResponse(BaseModel):
     is_spy: bool
-    word: Optional[str] = None  # None si es espía
+    word: Optional[str] = None
+
+
+class VoteRequest(BaseModel):
+    player_id: str
+    player_token: str
+    target_id: str

@@ -114,7 +114,12 @@
     justify-content: space-between;
   }
 
-  .room-code {
+  .player-list li.selectable { cursor: pointer; }
+  .player-list li.selectable:active { transform: scale(0.98); }
+  .player-list li.selected { border-color: var(--word); background: rgba(242, 193, 78, 0.12); }
+  .player-list li.eliminated { opacity: 0.4; text-decoration: line-through; }
+
+  .room-code, .match-timer {
     text-align: center;
     font-family: 'Bebas Neue', sans-serif;
     font-size: 2.5rem;
@@ -122,6 +127,9 @@
     color: var(--word);
     margin: 8px 0 20px;
   }
+
+  .match-timer { font-size: 3.2rem; margin: 4px 0 8px; }
+  .match-round-label { text-align:center; color: var(--muted); font-size: 0.9rem; margin-bottom: 20px; }
 
   .error {
     background: rgba(230, 57, 70, 0.15);
@@ -185,7 +193,28 @@
   }
 
   .waiting-text { text-align:center; color: var(--muted); margin-top: 16px; }
-  .status-ok { text-align:center; color: var(--word); font-weight:600; margin-bottom: 6px; }
+
+  .result-banner {
+    text-align: center;
+    border-radius: var(--radius);
+    padding: 24px;
+    margin-bottom: 16px;
+  }
+  .result-banner.spy-eliminated { background: linear-gradient(160deg, var(--spy), var(--spy-dark)); color: #FCEBEC; }
+  .result-banner.innocent-eliminated { background: var(--surface-2); color: var(--text); }
+  .result-banner .title { font-family: 'Bebas Neue', sans-serif; font-size: 1.8rem; }
+
+  .win-banner {
+    text-align: center;
+    border-radius: var(--radius);
+    padding: 32px 20px;
+    margin-bottom: 16px;
+  }
+  .win-banner.crew { background: linear-gradient(160deg, var(--word), var(--word-dark)); color: #26200A; }
+  .win-banner.spies { background: linear-gradient(160deg, var(--spy), var(--spy-dark)); color: #FCEBEC; }
+  .win-banner .title { font-family: 'Bebas Neue', sans-serif; font-size: 2.4rem; }
+
+  .rounds-config { border-top: 1px solid #3A3350; margin-top: 8px; padding-top: 16px; }
 </style>
 </head>
 <body>
@@ -207,7 +236,7 @@
 
   <!-- Pantalla: modo LOCAL (el host carga a todos los jugadores) -->
   <div id="screen-setup" class="card hidden">
-    <div class="top-nav"><button onclick="showScreen('mode')"><span class="arrow">←</span> Volver</button></div>
+    <div class="top-nav"><button onclick="leaveToMode()"><span class="arrow">←</span> Volver</button></div>
 
     <label>Nombre del jugador</label>
     <input type="text" id="input-player-name" placeholder="Ej: Nico">
@@ -221,12 +250,25 @@
     <label>Categoría</label>
     <select id="select-category"><option value="">Aleatoria</option></select>
 
+    <div class="rounds-config">
+      <label>Tiempo para discutir (segundos)</label>
+      <input type="number" id="input-discuss-seconds" min="10" value="60">
+
+      <label>Tiempo para votar (segundos)</label>
+      <input type="number" id="input-vote-seconds" min="10" value="45">
+
+      <div id="rounds-to-win-wrapper-local" class="hidden">
+        <label>Rondas para que gane el impostor (grupos de más de 6)</label>
+        <input type="number" id="input-rounds-to-win-local" min="1" value="2">
+      </div>
+    </div>
+
     <button class="btn-primary btn-block" onclick="startLocalGame()" style="margin-top: 10px;">Empezar partida</button>
   </div>
 
   <!-- Pantalla: modo ONLINE HOST -->
   <div id="screen-online-host" class="card hidden">
-    <div class="top-nav"><button onclick="showScreen('mode')"><span class="arrow">←</span> Volver</button></div>
+    <div class="top-nav"><button onclick="leaveToMode()"><span class="arrow">←</span> Volver</button></div>
 
     <!-- Paso 1: el host carga su propio nombre -->
     <div id="host-join-step">
@@ -252,13 +294,26 @@
       <label>Categoría</label>
       <select id="select-host-category"><option value="">Aleatoria</option></select>
 
+      <div class="rounds-config">
+        <label>Tiempo para discutir (segundos)</label>
+        <input type="number" id="input-host-discuss-seconds" min="10" value="60">
+
+        <label>Tiempo para votar (segundos)</label>
+        <input type="number" id="input-host-vote-seconds" min="10" value="45">
+
+        <div id="rounds-to-win-wrapper-host" class="hidden">
+          <label>Rondas para que gane el impostor (grupos de más de 6)</label>
+          <input type="number" id="input-rounds-to-win-host" min="1" value="2">
+        </div>
+      </div>
+
       <button class="btn-primary btn-block" onclick="startOnlineGame()" style="margin-top: 10px;">Empezar partida</button>
     </div>
   </div>
 
   <!-- Pantalla: unirse a sala existente (online, no-host) -->
   <div id="screen-join" class="card hidden">
-    <div class="top-nav"><button onclick="showScreen('mode')"><span class="arrow">←</span> Volver</button></div>
+    <div class="top-nav"><button onclick="leaveToMode()"><span class="arrow">←</span> Volver</button></div>
     <label>Código de sala</label>
     <input type="text" id="input-join-code" placeholder="Ej: 7F3K2" style="text-transform: uppercase;">
     <label>Tu nombre</label>
@@ -267,26 +322,75 @@
     <p id="join-waiting" class="waiting-text hidden">Esperando a que el host inicie la partida…</p>
   </div>
 
-  <!-- Pantalla: "pasá el teléfono a X" (solo modo local) -->
+  <!-- Pantalla: "pasá el teléfono a X" (solo modo local, revelación inicial) -->
   <div id="screen-handoff" class="handoff hidden">
     <p style="color: var(--muted);">Pasále el dispositivo a</p>
     <div class="name" id="handoff-name"></div>
     <button class="btn-primary" onclick="showRevealForCurrent()">Ya lo tengo, mostrar mi rol</button>
   </div>
 
-  <!-- Pantalla: revelación de rol -->
+  <!-- Pantalla: revelación de rol (una vez, antes de arrancar la partida) -->
   <div id="screen-reveal" class="hidden">
     <div id="reveal-card" class="reveal-card unrevealed" onclick="flipCard()">
       <div class="hint">Tocá para ver tu rol</div>
     </div>
     <button id="btn-next-player" class="btn-secondary btn-block hidden" style="margin-top:16px;" onclick="nextLocalPlayer()">Siguiente jugador</button>
-    <button id="btn-play-again" class="btn-primary btn-block hidden" style="margin-top:16px;" onclick="resetToLobby()">Jugar de nuevo</button>
+    <button id="btn-continue-match" class="btn-primary btn-block hidden" style="margin-top:16px;" onclick="continueToMatch()">Continuar a la partida</button>
+  </div>
+
+  <!-- Pantalla: turno de votar (solo modo local, se pasa el dispositivo) -->
+  <div id="screen-vote-handoff" class="handoff hidden">
+    <p style="color: var(--muted);">Turno de votar:</p>
+    <div class="name" id="vote-handoff-name"></div>
+    <p style="color: var(--muted); font-size: 0.9rem; margin-bottom: 16px;">Tocá a quién creés que es el impostor</p>
+    <ul id="vote-handoff-options" class="player-list"></ul>
+  </div>
+
+  <!-- Pantalla: partida en curso (timer + discusión / votación / resultado) -->
+  <div id="screen-match" class="hidden">
+    <div class="card">
+      <div class="match-round-label" id="match-round-label"></div>
+      <div id="match-timer-wrapper">
+        <div class="match-timer" id="match-timer">--:--</div>
+      </div>
+
+      <!-- Subvista: discusión -->
+      <div id="match-discuss" class="hidden">
+        <p style="text-align:center; color: var(--muted); margin-bottom: 16px;">Discutan en persona quién puede ser el impostor.</p>
+        <div id="match-role-card" class="reveal-card unrevealed" onclick="flipMatchCard()" style="aspect-ratio: auto; padding: 20px;">
+          <div class="hint">Tocá para ver tu rol de nuevo</div>
+        </div>
+      </div>
+
+      <!-- Subvista: votación (online) -->
+      <div id="match-vote-online" class="hidden">
+        <p style="text-align:center; color: var(--muted); margin-bottom: 12px;">Tocá a quién querés votar</p>
+        <ul id="match-vote-list" class="player-list"></ul>
+        <p id="match-vote-confirm" class="waiting-text hidden"></p>
+      </div>
+
+      <!-- Subvista: votación (local, esperando que termine el tiempo tras la ronda de handoff) -->
+      <div id="match-vote-local-waiting" class="hidden">
+        <p style="text-align:center; color: var(--muted);">Todos votaron. Esperando que termine el tiempo…</p>
+      </div>
+
+      <!-- Subvista: resultado de la ronda / partida terminada -->
+      <div id="match-result" class="hidden">
+        <div id="result-banner-box"></div>
+        <div id="win-banner-box"></div>
+        <div id="match-result-controls"></div>
+      </div>
+
+      <button class="btn-secondary btn-block" onclick="leaveToMode()" style="margin-top: 20px;">Salir</button>
+    </div>
   </div>
 </div>
 
 <script>
-  // Cambiar esta URL si el backend corre en otro host/puerto
-  const API_BASE = "http://192.168.0.232:8000";
+  // Como el frontend ahora lo sirve el mismo backend (mismo puerto),
+  // dejamos esto vacío para que los fetch() apunten al mismo origen.
+  const API_BASE = "";
+  const SESSION_KEY = "impostor_session";
 
   let mode = null;        // "local" | "online-host" | "online-join"
   let roomCode = null;
@@ -303,17 +407,37 @@
 
   let hostPollTimer = null;
   let joinPollTimer = null;
+  let matchPollTimer = null;
 
+  let cachedRole = null;           // rol propio ya consultado (evita pedirlo de nuevo)
+  let lastPhaseState = null;
+  let renderedPhaseKey = null;     // `${phase}-${round_number}` ya procesado (evita reiniciar handoffs)
+  let voteHandoffOrder = [];
+  let voteHandoffIndex = 0;
+  let selectedVoteTargetId = null;
+
+  // ==================== NAVEGACIÓN ====================
   function showScreen(name) {
-    document.querySelectorAll('.card, .handoff, #screen-reveal').forEach(el => el.classList.add('hidden'));
+    document.querySelectorAll('.card, .handoff, #screen-reveal, #screen-match, #screen-vote-handoff')
+      .forEach(el => el.classList.add('hidden'));
     document.getElementById('screen-' + name).classList.remove('hidden');
     hideError();
-    stopAllPolling();
   }
 
-  function stopAllPolling() {
+  function stopLobbyPolling() {
     if (hostPollTimer) { clearInterval(hostPollTimer); hostPollTimer = null; }
     if (joinPollTimer) { clearTimeout(joinPollTimer); joinPollTimer = null; }
+  }
+
+  function stopMatchPolling() {
+    if (matchPollTimer) { clearInterval(matchPollTimer); matchPollTimer = null; }
+  }
+
+  function leaveToMode() {
+    stopLobbyPolling();
+    stopMatchPolling();
+    clearSession();
+    showScreen('mode');
   }
 
   function showError(msg) {
@@ -325,6 +449,62 @@
     document.getElementById('error-box').classList.add('hidden');
   }
 
+  // ==================== SESIÓN (reconexión) ====================
+  function saveSession() {
+    const session = { mode, roomCode, hostToken, myPlayerId, myToken, localPlayers };
+    localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+  }
+  function clearSession() {
+    localStorage.removeItem(SESSION_KEY);
+  }
+  async function restoreSession() {
+    const raw = localStorage.getItem(SESSION_KEY);
+    if (!raw) { showScreen('mode'); return; }
+
+    let session;
+    try { session = JSON.parse(raw); } catch (e) { clearSession(); showScreen('mode'); return; }
+    if (!session.roomCode) { clearSession(); showScreen('mode'); return; }
+
+    try {
+      const res = await fetch(`${API_BASE}/rooms/${session.roomCode}/phase`);
+      if (!res.ok) { clearSession(); showScreen('mode'); return; }
+      const phaseState = await res.json();
+
+      mode = session.mode;
+      roomCode = session.roomCode;
+      hostToken = session.hostToken;
+      myPlayerId = session.myPlayerId;
+      myToken = session.myToken;
+      localPlayers = session.localPlayers || [];
+
+      if (phaseState.phase === "lobby") {
+        if (mode === "online-host") {
+          document.getElementById('host-room-code').textContent = roomCode;
+          document.getElementById('host-join-step').classList.add('hidden');
+          document.getElementById('host-lobby-step').classList.remove('hidden');
+          loadCategoriesInto('select-host-category');
+          showScreen('online-host');
+          startHostPolling();
+        } else if (mode === "online-join") {
+          showScreen('join');
+          document.getElementById('join-waiting').classList.remove('hidden');
+          pollForStart();
+        } else {
+          renderPlayerList();
+          loadCategoriesInto('select-category');
+          showScreen('setup');
+        }
+      } else {
+        showScreen('match');
+        startMatchPolling();
+      }
+    } catch (e) {
+      clearSession();
+      showScreen('mode');
+    }
+  }
+
+  // ==================== CATEGORÍAS ====================
   async function loadCategoriesInto(selectId) {
     try {
       const res = await fetch(`${API_BASE}/categories`);
@@ -376,6 +556,7 @@
       localPlayers.push({ player_id: data.player_id, name, token: data.player_token });
       input.value = '';
       renderPlayerList();
+      saveSession();
       hideError();
     } catch (e) {
       showError(e.message);
@@ -390,18 +571,27 @@
       li.textContent = p.name;
       ul.appendChild(li);
     });
+    document.getElementById('rounds-to-win-wrapper-local').classList.toggle('hidden', localPlayers.length <= 6);
   }
 
   async function startLocalGame() {
     const numSpies = parseInt(document.getElementById('input-num-spies').value, 10);
     const categoryValue = document.getElementById('select-category').value;
     const categoryId = categoryValue ? parseInt(categoryValue, 10) : null;
+    const discussSeconds = parseInt(document.getElementById('input-discuss-seconds').value, 10);
+    const voteSeconds = parseInt(document.getElementById('input-vote-seconds').value, 10);
+    const roundsToWin = localPlayers.length > 6
+      ? parseInt(document.getElementById('input-rounds-to-win-local').value, 10)
+      : null;
 
     try {
       const res = await fetch(`${API_BASE}/rooms/${roomCode}/start`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ host_token: hostToken, num_spies: numSpies, category_id: categoryId })
+        body: JSON.stringify({
+          host_token: hostToken, num_spies: numSpies, category_id: categoryId,
+          discuss_seconds: discussSeconds, vote_seconds: voteSeconds, rounds_to_win: roundsToWin
+        })
       });
       if (!res.ok) throw new Error((await res.json()).detail);
       localIndex = 0;
@@ -421,7 +611,7 @@
     showScreen('reveal');
     resetCard();
     document.getElementById('btn-next-player').classList.toggle('hidden', localIndex >= localPlayers.length - 1);
-    document.getElementById('btn-play-again').classList.toggle('hidden', localIndex < localPlayers.length - 1);
+    document.getElementById('btn-continue-match').classList.toggle('hidden', localIndex < localPlayers.length - 1);
   }
 
   function nextLocalPlayer() {
@@ -468,6 +658,7 @@
       document.getElementById('host-lobby-step').classList.remove('hidden');
       loadCategoriesInto('select-host-category');
       startHostPolling();
+      saveSession();
       hideError();
     } catch (e) {
       showError(e.message);
@@ -490,6 +681,7 @@
         li.textContent = p.name;
         ul.appendChild(li);
       });
+      document.getElementById('rounds-to-win-wrapper-host').classList.toggle('hidden', data.players.length <= 6);
     } catch (e) { /* seguimos intentando en el próximo tick */ }
   }
 
@@ -497,12 +689,21 @@
     const numSpies = parseInt(document.getElementById('input-host-num-spies').value, 10);
     const categoryValue = document.getElementById('select-host-category').value;
     const categoryId = categoryValue ? parseInt(categoryValue, 10) : null;
+    const discussSeconds = parseInt(document.getElementById('input-host-discuss-seconds').value, 10);
+    const voteSeconds = parseInt(document.getElementById('input-host-vote-seconds').value, 10);
+    const roundsToWinWrapperVisible = !document.getElementById('rounds-to-win-wrapper-host').classList.contains('hidden');
+    const roundsToWin = roundsToWinWrapperVisible
+      ? parseInt(document.getElementById('input-rounds-to-win-host').value, 10)
+      : null;
 
     try {
       const res = await fetch(`${API_BASE}/rooms/${roomCode}/start`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ host_token: hostToken, num_spies: numSpies, category_id: categoryId })
+        body: JSON.stringify({
+          host_token: hostToken, num_spies: numSpies, category_id: categoryId,
+          discuss_seconds: discussSeconds, vote_seconds: voteSeconds, rounds_to_win: roundsToWin
+        })
       });
       if (!res.ok) throw new Error((await res.json()).detail);
 
@@ -511,7 +712,7 @@
       showScreen('reveal');
       resetCard();
       document.getElementById('btn-next-player').classList.add('hidden');
-      document.getElementById('btn-play-again').classList.remove('hidden');
+      document.getElementById('btn-continue-match').classList.remove('hidden');
     } catch (e) {
       showError(e.message);
     }
@@ -542,6 +743,7 @@
       roomCode = code;
       myPlayerId = data.player_id;
       myToken = data.player_token;
+      saveSession();
       hideError();
       document.getElementById('join-waiting').classList.remove('hidden');
       pollForStart();
@@ -557,7 +759,7 @@
       if (data.status === "started") {
         showScreen('reveal');
         document.getElementById('btn-next-player').classList.add('hidden');
-        document.getElementById('btn-play-again').classList.remove('hidden');
+        document.getElementById('btn-continue-match').classList.remove('hidden');
         resetCard();
         return;
       }
@@ -566,8 +768,6 @@
   }
 
   // ==================== REVELACIÓN DE ROL (compartida) ====================
-  let cachedRole = null;
-
   function resetCard() {
     const card = document.getElementById('reveal-card');
     card.className = 'reveal-card unrevealed';
@@ -593,7 +793,6 @@
   async function flipCard() {
     const card = document.getElementById('reveal-card');
 
-    // Si ya está revelada, la próxima vez que tocan la ocultamos
     if (card.dataset.state === "revealed") {
       card.className = 'reveal-card unrevealed';
       card.innerHTML = '<div class="hint">Tocá para volver a ver tu rol</div>';
@@ -601,7 +800,6 @@
       return;
     }
 
-    // Si ya la pedimos antes, no volvemos a llamar al servidor
     if (cachedRole) {
       renderRole(card, cachedRole);
       card.dataset.state = "revealed";
@@ -625,30 +823,289 @@
     }
   }
 
-  // ==================== VOLVER A JUGAR ====================
-  async function resetToLobby() {
+  function continueToMatch() {
+    saveSession();
+    showScreen('match');
+    renderedPhaseKey = null;
+    startMatchPolling();
+  }
+
+  function resetMatchCard() {
+    const card = document.getElementById('match-role-card');
+    card.className = 'reveal-card unrevealed';
+    card.style.aspectRatio = 'auto';
+    card.style.padding = '20px';
+    card.innerHTML = '<div class="hint">Tocá para ver tu rol de nuevo</div>';
+    card.dataset.state = "hidden";
+  }
+
+  async function flipMatchCard() {
+    const card = document.getElementById('match-role-card');
+
+    if (card.dataset.state === "revealed") {
+      card.className = 'reveal-card unrevealed';
+      card.innerHTML = '<div class="hint">Tocá para ver tu rol de nuevo</div>';
+      card.dataset.state = "hidden";
+      return;
+    }
+
+    if (cachedRole) {
+      renderRole(card, cachedRole);
+      card.dataset.state = "revealed";
+      return;
+    }
+
     try {
+      const res = await fetch(
+        `${API_BASE}/rooms/${roomCode}/players/${myPlayerId}/role?player_token=${myToken}`
+      );
+      if (!res.ok) throw new Error((await res.json()).detail);
+      const data = await res.json();
+      cachedRole = data;
+      renderRole(card, data);
+      card.dataset.state = "revealed";
+    } catch (e) {
+      showError(e.message);
+    }
+  }
+
+  // ==================== TABLERO DE PARTIDA (timer + fases) ====================
+  function startMatchPolling() {
+    refreshMatch();
+    matchPollTimer = setInterval(refreshMatch, 1000);
+  }
+
+  async function refreshMatch() {
+    try {
+      const res = await fetch(`${API_BASE}/rooms/${roomCode}/phase`);
+      if (!res.ok) throw new Error("No se pudo consultar la partida");
+      const state = await res.json();
+      lastPhaseState = state;
+      renderMatch(state);
+    } catch (e) {
+      // seguimos intentando en el próximo tick
+    }
+  }
+
+  function formatSeconds(totalSeconds) {
+    const s = Math.max(0, Math.round(totalSeconds));
+    const mm = String(Math.floor(s / 60)).padStart(2, '0');
+    const ss = String(s % 60).padStart(2, '0');
+    return `${mm}:${ss}`;
+  }
+
+  function updateTimerDisplay(phaseEndsAt) {
+    const el = document.getElementById('match-timer');
+    if (phaseEndsAt == null) {
+      el.textContent = '--:--';
+      return;
+    }
+    const remaining = phaseEndsAt - (Date.now() / 1000);
+    el.textContent = formatSeconds(remaining);
+  }
+
+  function hideAllMatchSubviews() {
+    ['match-discuss', 'match-vote-online', 'match-vote-local-waiting', 'match-result']
+      .forEach(id => document.getElementById(id).classList.add('hidden'));
+  }
+
+  function renderMatch(state) {
+    updateTimerDisplay(state.phase_ends_at);
+    document.getElementById('match-round-label').textContent =
+      `Ronda ${state.round_number} · para ganar el impostor: ${state.rounds_to_win}`;
+
+    const stateKey = `${state.phase}-${state.round_number}`;
+    const isNewPhase = stateKey !== renderedPhaseKey;
+
+    if (state.phase === "discuss") {
+      hideAllMatchSubviews();
+      document.getElementById('match-discuss').classList.remove('hidden');
+      const roleCardWrapper = document.getElementById('match-role-card');
+      roleCardWrapper.style.display = (mode === "local") ? "none" : "flex";
+      if (isNewPhase) resetMatchCard();
+
+    } else if (state.phase === "vote") {
+      hideAllMatchSubviews();
       if (mode === "local") {
-        await fetch(`${API_BASE}/rooms/${roomCode}/reset?host_token=${hostToken}`, { method: 'POST' });
-        renderPlayerList();
-        showScreen('setup');
-      } else if (mode === "online-host") {
-        await fetch(`${API_BASE}/rooms/${roomCode}/reset?host_token=${hostToken}`, { method: 'POST' });
+        if (isNewPhase) {
+          startLocalVoteHandoff(state);
+        } else if (voteHandoffIndex >= voteHandoffOrder.length) {
+          document.getElementById('match-vote-local-waiting').classList.remove('hidden');
+        }
+      } else {
+        document.getElementById('match-vote-online').classList.remove('hidden');
+        renderOnlineVoteList(state);
+      }
+
+    } else if (state.phase === "round_result" || state.phase === "finished") {
+      hideAllMatchSubviews();
+      document.getElementById('match-result').classList.remove('hidden');
+      renderRoundResult(state);
+
+    } else if (state.phase === "lobby") {
+      stopMatchPolling();
+      if (mode === "online-host") {
+        document.getElementById('host-join-step').classList.add('hidden');
         document.getElementById('host-lobby-step').classList.remove('hidden');
+        loadCategoriesInto('select-host-category');
         showScreen('online-host');
         startHostPolling();
-      } else {
-        // online-join: solo esperamos a que el host arranque otra ronda
+      } else if (mode === "online-join") {
         showScreen('join');
         document.getElementById('join-waiting').classList.remove('hidden');
         pollForStart();
+      } else {
+        renderPlayerList();
+        showScreen('setup');
+      }
+    }
+
+    renderedPhaseKey = stateKey;
+  }
+
+  // ---------- Votación online (tap directo) ----------
+  function renderOnlineVoteList(state) {
+    const ul = document.getElementById('match-vote-list');
+    ul.innerHTML = '';
+    state.players.forEach(p => {
+      if (!p.alive) return;
+      if (p.player_id === myPlayerId) return;
+      const li = document.createElement('li');
+      li.textContent = p.name;
+      li.classList.add('selectable');
+      if (p.player_id === selectedVoteTargetId) li.classList.add('selected');
+      li.onclick = () => castOnlineVote(p.player_id, p.name);
+      ul.appendChild(li);
+    });
+  }
+
+  async function castOnlineVote(targetId, targetName) {
+    try {
+      const res = await fetch(`${API_BASE}/rooms/${roomCode}/vote`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ player_id: myPlayerId, player_token: myToken, target_id: targetId })
+      });
+      if (!res.ok) throw new Error((await res.json()).detail);
+      selectedVoteTargetId = targetId;
+      renderOnlineVoteList(lastPhaseState);
+      const confirmEl = document.getElementById('match-vote-confirm');
+      confirmEl.textContent = `Votaste a ${targetName}. Podés cambiar tu voto mientras corre el tiempo.`;
+      confirmEl.classList.remove('hidden');
+    } catch (e) {
+      showError(e.message);
+    }
+  }
+
+  // ---------- Votación local (se pasa el dispositivo) ----------
+  function startLocalVoteHandoff(state) {
+    voteHandoffOrder = state.players.filter(p => p.alive).map(p => p.player_id);
+    voteHandoffIndex = 0;
+    showVoteHandoffForCurrent();
+  }
+
+  function showVoteHandoffForCurrent() {
+    if (voteHandoffIndex >= voteHandoffOrder.length) {
+      showScreen('match');
+      hideAllMatchSubviews();
+      document.getElementById('match-vote-local-waiting').classList.remove('hidden');
+      return;
+    }
+    const voterId = voteHandoffOrder[voteHandoffIndex];
+    const voterPlayer = localPlayers.find(p => p.player_id === voterId);
+    document.getElementById('vote-handoff-name').textContent = voterPlayer ? voterPlayer.name : '???';
+
+    const ul = document.getElementById('vote-handoff-options');
+    ul.innerHTML = '';
+    (lastPhaseState ? lastPhaseState.players : []).forEach(p => {
+      if (!p.alive || p.player_id === voterId) return;
+      const li = document.createElement('li');
+      li.textContent = p.name;
+      li.classList.add('selectable');
+      li.onclick = () => castLocalVote(voterId, p.player_id);
+      ul.appendChild(li);
+    });
+
+    showScreen('vote-handoff');
+  }
+
+  async function castLocalVote(voterId, targetId) {
+    const voterPlayer = localPlayers.find(p => p.player_id === voterId);
+    try {
+      const res = await fetch(`${API_BASE}/rooms/${roomCode}/vote`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ player_id: voterId, player_token: voterPlayer.token, target_id: targetId })
+      });
+      if (!res.ok) throw new Error((await res.json()).detail);
+      voteHandoffIndex++;
+      showVoteHandoffForCurrent();
+    } catch (e) {
+      showError(e.message);
+    }
+  }
+
+  // ---------- Resultado de ronda / partida terminada ----------
+  function renderRoundResult(state) {
+    const result = state.last_round_result;
+    const banner = document.getElementById('result-banner-box');
+    const winBox = document.getElementById('win-banner-box');
+    const controls = document.getElementById('match-result-controls');
+
+    if (result) {
+      const spyClass = result.was_spy ? 'spy-eliminated' : 'innocent-eliminated';
+      const title = result.eliminated_name
+        ? (result.was_spy
+            ? `${result.eliminated_name} ERA el impostor`
+            : `${result.eliminated_name} NO era el impostor`)
+        : 'No hubo mayoría clara: nadie fue eliminado';
+      banner.innerHTML = `
+        <div class="result-banner ${spyClass}">
+          <div class="title">${title}</div>
+          <div style="margin-top:8px; font-size:0.9rem;">La palabra de esta ronda era: <b>${result.word.toUpperCase()}</b></div>
+        </div>`;
+    } else {
+      banner.innerHTML = '';
+    }
+
+    if (state.winner) {
+      const isCrew = state.winner === 'crew';
+      winBox.innerHTML = `
+        <div class="win-banner ${isCrew ? 'crew' : 'spies'}">
+          <div class="title">${isCrew ? '🎉 GANÓ EL CREW' : '🕵️ GANÓ EL IMPOSTOR'}</div>
+        </div>`;
+
+      if (mode === "online-host" || mode === "local") {
+        controls.innerHTML = `<button class="btn-primary btn-block" onclick="resetMatch()">Jugar de nuevo</button>`;
+      } else {
+        controls.innerHTML = `<p class="waiting-text">Esperando a que el host reinicie la partida…</p>`;
+      }
+    } else {
+      winBox.innerHTML = '';
+      controls.innerHTML = `<p class="waiting-text">Preparando la siguiente ronda…</p>`;
+    }
+  }
+
+  async function resetMatch() {
+    try {
+      await fetch(`${API_BASE}/rooms/${roomCode}/reset?host_token=${hostToken}`, { method: 'POST' });
+      stopMatchPolling();
+      if (mode === "local") {
+        renderPlayerList();
+        showScreen('setup');
+      } else {
+        document.getElementById('host-join-step').classList.add('hidden');
+        document.getElementById('host-lobby-step').classList.remove('hidden');
+        loadCategoriesInto('select-host-category');
+        showScreen('online-host');
+        startHostPolling();
       }
     } catch (e) {
       showError(e.message);
     }
   }
 
-  showScreen('mode');
+  restoreSession();
 </script>
 
 </body>

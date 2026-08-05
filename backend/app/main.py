@@ -1,28 +1,17 @@
+from pathlib import Path
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from impostor.game import Game
 from app.rooms import room_manager
 from app.schemas import (
-    CreateRoomResponse,
-    JoinRoomRequest,
-    JoinRoomResponse,
-    RoomStateResponse,
-    StartGameRequest,
-    CategoryOut,
-    MyRoleResponse,
+    CreateRoomResponse, JoinRoomRequest, JoinRoomResponse, RoomStateResponse,
+    StartGameRequest, CategoryOut, MyRoleResponse, VoteRequest,
 )
 
 app = FastAPI(title="Impostor API")
-
-# En desarrollo permitimos cualquier origen. Antes de producción, restringir
-# a la URL real del frontend (igual que se hizo con Wharty en Vercel).
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
 
 @app.get("/categories", response_model=list[CategoryOut])
@@ -60,18 +49,15 @@ def room_state(code: str):
         room = room_manager.get_room(code)
     except KeyError:
         raise HTTPException(404, "Sala no encontrada")
-    return {
-        "room_code": room.code,
-        "status": room.status,
-        "players": room.players_public(),
-    }
+    return {"room_code": room.code, "status": room.status, "players": room.players_public()}
 
 
 @app.post("/rooms/{code}/start")
 def start_room(code: str, body: StartGameRequest):
     try:
         room = room_manager.get_room(code)
-        room.start(body.host_token, body.num_spies, body.category_id)
+        room.start(body.host_token, body.num_spies, body.category_id,
+                   body.discuss_seconds, body.vote_seconds, body.rounds_to_win)
     except KeyError:
         raise HTTPException(404, "Sala no encontrada")
     except PermissionError as err:
@@ -94,6 +80,29 @@ def my_role(code: str, player_id: str, player_token: str):
         raise HTTPException(400, str(err))
 
 
+@app.get("/rooms/{code}/phase")
+def get_phase(code: str):
+    try:
+        room = room_manager.get_room(code)
+        return room.get_phase_state()
+    except KeyError:
+        raise HTTPException(404, "Sala no encontrada")
+
+
+@app.post("/rooms/{code}/vote")
+def submit_vote(code: str, body: VoteRequest):
+    try:
+        room = room_manager.get_room(code)
+        room.submit_vote(body.player_id, body.player_token, body.target_id)
+    except KeyError:
+        raise HTTPException(404, "Sala no encontrada")
+    except PermissionError as err:
+        raise HTTPException(403, str(err))
+    except ValueError as err:
+        raise HTTPException(400, str(err))
+    return {"status": "ok"}
+
+
 @app.post("/rooms/{code}/reset")
 def reset_room(code: str, host_token: str):
     try:
@@ -104,3 +113,12 @@ def reset_room(code: str, host_token: str):
     except PermissionError as err:
         raise HTTPException(403, str(err))
     return {"status": "lobby"}
+
+
+# Servimos el frontend directamente desde el backend, en el mismo puerto.
+# Esto evita que el navegador trate front y back como "orígenes" distintos
+# (algo que iOS bloquea de forma silenciosa entre puertos en la red local).
+# IMPORTANTE: este mount va al final, después de todas las rutas de la API,
+# para que /categories, /rooms, etc. sigan resolviendo antes que esto.
+_frontend_dir = Path(__file__).resolve().parent.parent.parent / "frontend"
+app.mount("/", StaticFiles(directory=_frontend_dir, html=True), name="frontend")
