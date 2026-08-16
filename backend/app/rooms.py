@@ -132,8 +132,8 @@ class Room:
         self._pick_word()
         self.votes = {}
         self.last_round_result = None
-        self.phase = "discuss"
-        self.phase_ends_at = time.time() + self.discuss_seconds
+        self.phase = "vote"
+        self.phase_ends_at = time.monotonic() + self.discuss_seconds + self.vote_seconds
 
     # ------------------------------------------------------------------ #
     # Avance de fases (perezoso, sin hilos en background)
@@ -142,14 +142,10 @@ class Room:
         with self._lock:
             if self.phase_ends_at is None:
                 return
-            if time.time() < self.phase_ends_at:
+            if time.monotonic() < self.phase_ends_at:
                 return
 
-            if self.phase == "discuss":
-                self.phase = "vote"
-                self.phase_ends_at = time.time() + self.vote_seconds
-
-            elif self.phase == "vote":
+            if self.phase == "vote":
                 self._tally_votes()
 
             elif self.phase == "round_result":
@@ -196,7 +192,7 @@ class Room:
             self.winner = "spies"
 
         self.phase = "round_result"
-        self.phase_ends_at = time.time() + ROUND_RESULT_DISPLAY_SECONDS
+        self.phase_ends_at = time.monotonic() + ROUND_RESULT_DISPLAY_SECONDS
 
     # ------------------------------------------------------------------ #
     # Votación
@@ -216,17 +212,29 @@ class Room:
             if target_id == player_id:
                 raise ValueError("No podés votarte a vos mismo")
             self.votes[player_id] = target_id
+            if len(self.votes) >= len(self.alive_ids):
+                self._tally_votes()
 
+    def skip_phase(self, host_token):
+            if host_token != self.host_token:
+                raise PermissionError("Token de host inválido")
+            if self.phase != "vote":
+                raise ValueError("No hay nada para saltear ahora")
+            self.phase_ends_at = time.monotonic()
     # ------------------------------------------------------------------ #
     # Consultas de estado
     # ------------------------------------------------------------------ #
     def get_phase_state(self):
         self._advance_if_needed()
+        remaining = None
+        if self.phase_ends_at is not None:
+            remaining = max(0, round(self.phase_ends_at - time.monotonic()))
         return {
             "phase": self.phase,
             "round_number": self.round_number,
             "rounds_to_win": self.rounds_to_win,
             "phase_ends_at": self.phase_ends_at,
+            "remaining_seconds": remaining,
             "winner": self.winner,
             "players": [
                 {"player_id": pid, "name": p.name, "alive": pid in self.alive_ids}

@@ -102,6 +102,18 @@ def submit_vote(code: str, body: VoteRequest):
         raise HTTPException(400, str(err))
     return {"status": "ok"}
 
+@app.post("/rooms/{code}/skip")
+def skip_phase(code: str, host_token: str):
+    try:
+        room = room_manager.get_room(code)
+        room.skip_phase(host_token)
+    except KeyError:
+        raise HTTPException(404, "Sala no encontrada")
+    except PermissionError as err:
+        raise HTTPException(403, str(err))
+    except ValueError as err:
+        raise HTTPException(400, str(err))
+    return {"status": "ok"}
 
 @app.post("/rooms/{code}/reset")
 def reset_room(code: str, host_token: str):

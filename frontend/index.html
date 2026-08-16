@@ -251,11 +251,11 @@
     <select id="select-category"><option value="">Aleatoria</option></select>
 
     <div class="rounds-config">
-      <label>Tiempo para discutir (segundos)</label>
-      <input type="number" id="input-discuss-seconds" min="10" value="60">
+      <label>Tiempo para discutir (minutos)</label>
+      <input type="number" id="input-discuss-seconds" min="0.5" step="0.5" value="1">
 
-      <label>Tiempo para votar (segundos)</label>
-      <input type="number" id="input-vote-seconds" min="10" value="45">
+      <label>Tiempo para votar (minutos)</label>
+      <input type="number" id="input-vote-seconds" min="0.5" step="0.5" value="1">
 
       <div id="rounds-to-win-wrapper-local" class="hidden">
         <label>Rondas para que gane el impostor (grupos de más de 6)</label>
@@ -295,11 +295,11 @@
       <select id="select-host-category"><option value="">Aleatoria</option></select>
 
       <div class="rounds-config">
-        <label>Tiempo para discutir (segundos)</label>
-        <input type="number" id="input-host-discuss-seconds" min="10" value="60">
+        <label>Tiempo para discutir (minutos)</label>
+        <input type="number" id="input-host-discuss-seconds" min="0.5" step="0.5" value="1">
 
-        <label>Tiempo para votar (segundos)</label>
-        <input type="number" id="input-host-vote-seconds" min="10" value="45">
+        <label>Tiempo para votar (minutos)</label>
+        <input type="number" id="input-host-vote-seconds" min="0.5" step="0.5" value="1">
 
         <div id="rounds-to-win-wrapper-host" class="hidden">
           <label>Rondas para que gane el impostor (grupos de más de 6)</label>
@@ -347,42 +347,43 @@
   </div>
 
   <!-- Pantalla: partida en curso (timer + discusión / votación / resultado) -->
-  <div id="screen-match" class="hidden">
-    <div class="card">
-      <div class="match-round-label" id="match-round-label"></div>
-      <div id="match-timer-wrapper">
-        <div class="match-timer" id="match-timer">--:--</div>
-      </div>
-
-      <!-- Subvista: discusión -->
-      <div id="match-discuss" class="hidden">
-        <p style="text-align:center; color: var(--muted); margin-bottom: 16px;">Discutan en persona quién puede ser el impostor.</p>
-        <div id="match-role-card" class="reveal-card unrevealed" onclick="flipMatchCard()" style="aspect-ratio: auto; padding: 20px;">
-          <div class="hint">Tocá para ver tu rol de nuevo</div>
-        </div>
-      </div>
-
-      <!-- Subvista: votación (online) -->
-      <div id="match-vote-online" class="hidden">
-        <p style="text-align:center; color: var(--muted); margin-bottom: 12px;">Tocá a quién querés votar</p>
-        <ul id="match-vote-list" class="player-list"></ul>
-        <p id="match-vote-confirm" class="waiting-text hidden"></p>
-      </div>
-
-      <!-- Subvista: votación (local, esperando que termine el tiempo tras la ronda de handoff) -->
-      <div id="match-vote-local-waiting" class="hidden">
-        <p style="text-align:center; color: var(--muted);">Todos votaron. Esperando que termine el tiempo…</p>
-      </div>
-
-      <!-- Subvista: resultado de la ronda / partida terminada -->
-      <div id="match-result" class="hidden">
-        <div id="result-banner-box"></div>
-        <div id="win-banner-box"></div>
-        <div id="match-result-controls"></div>
-      </div>
-
-      <button class="btn-secondary btn-block" onclick="leaveToMode()" style="margin-top: 20px;">Salir</button>
+  <div id="screen-match" class="card hidden">
+    <div class="match-round-label" id="match-round-label"></div>
+    <div id="match-timer-wrapper">
+      <div class="match-timer" id="match-timer">--:--</div>
     </div>
+
+    <!-- Tarjeta de rol: visible durante toda la partida (solo modo online) -->
+    <div id="match-role-card" class="reveal-card unrevealed" onclick="flipMatchCard()" style="aspect-ratio: auto; padding: 20px; margin-bottom: 16px;">
+      <div class="hint">Tocá para ver tu rol de nuevo</div>
+    </div>
+
+    <!-- Subvista: discusión -->
+    <div id="match-discuss" class="hidden">
+      <p style="text-align:center; color: var(--muted); margin-bottom: 16px;">Discutan en persona quién puede ser el impostor.</p>
+    </div>
+
+    <!-- Subvista: votación (online) -->
+    <div id="match-vote-online" class="hidden">
+      <p style="text-align:center; color: var(--muted); margin-bottom: 12px;">Tocá a quién querés votar</p>
+      <ul id="match-vote-list" class="player-list"></ul>
+      <p id="match-vote-confirm" class="waiting-text hidden"></p>
+      <button id="btn-skip-phase" class="btn-secondary btn-block hidden" onclick="skipPhase()" style="margin-top:12px;">⏭ Saltear tiempo (terminar ya)</button>
+    </div>
+
+    <!-- Subvista: votación (local, esperando que termine el tiempo tras la ronda de handoff) -->
+    <div id="match-vote-local-waiting" class="hidden">
+      <p style="text-align:center; color: var(--muted);">Todos votaron. Esperando que termine el tiempo…</p>
+    </div>
+
+    <!-- Subvista: resultado de la ronda / partida terminada -->
+    <div id="match-result" class="hidden">
+      <div id="result-banner-box"></div>
+      <div id="win-banner-box"></div>
+      <div id="match-result-controls"></div>
+    </div>
+
+    <button class="btn-secondary btn-block" onclick="leaveToMode()" style="margin-top: 20px;">Salir</button>
   </div>
 </div>
 
@@ -578,8 +579,8 @@
     const numSpies = parseInt(document.getElementById('input-num-spies').value, 10);
     const categoryValue = document.getElementById('select-category').value;
     const categoryId = categoryValue ? parseInt(categoryValue, 10) : null;
-    const discussSeconds = parseInt(document.getElementById('input-discuss-seconds').value, 10);
-    const voteSeconds = parseInt(document.getElementById('input-vote-seconds').value, 10);
+    const discussSeconds = Math.round(parseFloat(document.getElementById('input-discuss-seconds').value) * 60);
+    const voteSeconds = Math.round(parseFloat(document.getElementById('input-vote-seconds').value) * 60);
     const roundsToWin = localPlayers.length > 6
       ? parseInt(document.getElementById('input-rounds-to-win-local').value, 10)
       : null;
@@ -689,8 +690,8 @@
     const numSpies = parseInt(document.getElementById('input-host-num-spies').value, 10);
     const categoryValue = document.getElementById('select-host-category').value;
     const categoryId = categoryValue ? parseInt(categoryValue, 10) : null;
-    const discussSeconds = parseInt(document.getElementById('input-host-discuss-seconds').value, 10);
-    const voteSeconds = parseInt(document.getElementById('input-host-vote-seconds').value, 10);
+    const discussSeconds = Math.round(parseFloat(document.getElementById('input-host-discuss-seconds').value) * 60);
+    const voteSeconds = Math.round(parseFloat(document.getElementById('input-host-vote-seconds').value) * 60);
     const roundsToWinWrapperVisible = !document.getElementById('rounds-to-win-wrapper-host').classList.contains('hidden');
     const roundsToWin = roundsToWinWrapperVisible
       ? parseInt(document.getElementById('input-rounds-to-win-host').value, 10)
@@ -894,14 +895,13 @@
     return `${mm}:${ss}`;
   }
 
-  function updateTimerDisplay(phaseEndsAt) {
+  function updateTimerDisplay(remainingSeconds) {
     const el = document.getElementById('match-timer');
-    if (phaseEndsAt == null) {
+    if (remainingSeconds == null) {
       el.textContent = '--:--';
       return;
     }
-    const remaining = phaseEndsAt - (Date.now() / 1000);
-    el.textContent = formatSeconds(remaining);
+    el.textContent = `⏱ ${formatSeconds(remainingSeconds)}`;
   }
 
   function hideAllMatchSubviews() {
@@ -909,10 +909,19 @@
       .forEach(id => document.getElementById(id).classList.add('hidden'));
   }
 
+  let lastCardRoundNumber = null;
+
   function renderMatch(state) {
-    updateTimerDisplay(state.phase_ends_at);
+    updateTimerDisplay(state.remaining_seconds);
     document.getElementById('match-round-label').textContent =
       `Ronda ${state.round_number} · para ganar el impostor: ${state.rounds_to_win}`;
+
+    const roleCard = document.getElementById('match-role-card');
+    roleCard.style.display = (mode === "local") ? "none" : "flex";
+    if (state.round_number !== lastCardRoundNumber) {
+      resetMatchCard();
+      lastCardRoundNumber = state.round_number;
+    }
 
     const stateKey = `${state.phase}-${state.round_number}`;
     const isNewPhase = stateKey !== renderedPhaseKey;
@@ -920,9 +929,6 @@
     if (state.phase === "discuss") {
       hideAllMatchSubviews();
       document.getElementById('match-discuss').classList.remove('hidden');
-      const roleCardWrapper = document.getElementById('match-role-card');
-      roleCardWrapper.style.display = (mode === "local") ? "none" : "flex";
-      if (isNewPhase) resetMatchCard();
 
     } else if (state.phase === "vote") {
       hideAllMatchSubviews();
@@ -965,6 +971,7 @@
 
   // ---------- Votación online (tap directo) ----------
   function renderOnlineVoteList(state) {
+    document.getElementById('btn-skip-phase').classList.toggle('hidden', !hostToken);
     const ul = document.getElementById('match-vote-list');
     ul.innerHTML = '';
     state.players.forEach(p => {
@@ -992,6 +999,14 @@
       const confirmEl = document.getElementById('match-vote-confirm');
       confirmEl.textContent = `Votaste a ${targetName}. Podés cambiar tu voto mientras corre el tiempo.`;
       confirmEl.classList.remove('hidden');
+    } catch (e) {
+      showError(e.message);
+    }
+  }
+
+  async function skipPhase() {
+    try {
+      await fetch(`${API_BASE}/rooms/${roomCode}/skip?host_token=${hostToken}`, { method: 'POST' });
     } catch (e) {
       showError(e.message);
     }
