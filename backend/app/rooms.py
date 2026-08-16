@@ -132,8 +132,8 @@ class Room:
         self._pick_word()
         self.votes = {}
         self.last_round_result = None
-        self.phase = "vote"
-        self.phase_ends_at = time.monotonic() + self.discuss_seconds + self.vote_seconds
+        self.phase = "discuss"
+        self.phase_ends_at = None
 
     # ------------------------------------------------------------------ #
     # Avance de fases (perezoso, sin hilos en background)
@@ -221,6 +221,14 @@ class Room:
             if self.phase != "vote":
                 raise ValueError("No hay nada para saltear ahora")
             self.phase_ends_at = time.monotonic()
+
+    def begin_vote(self, host_token):
+        if host_token != self.host_token:
+            raise PermissionError("Token de host inválido")
+        if self.phase != "discuss":
+            raise ValueError("No se puede pasar a votación ahora")
+        self.phase = "vote"
+        self.phase_ends_at = time.monotonic() + self.vote_seconds        
     # ------------------------------------------------------------------ #
     # Consultas de estado
     # ------------------------------------------------------------------ #

@@ -251,14 +251,12 @@
     <select id="select-category"><option value="">Aleatoria</option></select>
 
     <div class="rounds-config">
-      <label>Tiempo para discutir (minutos)</label>
-      <input type="number" id="input-discuss-seconds" min="0.5" step="0.5" value="1">
 
       <label>Tiempo para votar (minutos)</label>
-      <input type="number" id="input-vote-seconds" min="0.5" step="0.5" value="1">
+      <input type="number" id="input-vote-seconds" min="1" step="1" value="1">
 
       <div id="rounds-to-win-wrapper-local" class="hidden">
-        <label>Rondas para que gane el impostor (grupos de más de 6)</label>
+        <label>Rondas para que gane el impostor</label>
         <input type="number" id="input-rounds-to-win-local" min="1" value="2">
       </div>
     </div>
@@ -295,9 +293,6 @@
       <select id="select-host-category"><option value="">Aleatoria</option></select>
 
       <div class="rounds-config">
-        <label>Tiempo para discutir (minutos)</label>
-        <input type="number" id="input-host-discuss-seconds" min="0.5" step="0.5" value="1">
-
         <label>Tiempo para votar (minutos)</label>
         <input type="number" id="input-host-vote-seconds" min="0.5" step="0.5" value="1">
 
@@ -335,11 +330,12 @@
       <div class="hint">Tocá para ver tu rol</div>
     </div>
     <button id="btn-next-player" class="btn-secondary btn-block hidden" style="margin-top:16px;" onclick="nextLocalPlayer()">Siguiente jugador</button>
-    <button id="btn-continue-match" class="btn-primary btn-block hidden" style="margin-top:16px;" onclick="continueToMatch()">Continuar a la partida</button>
+    <button id="btn-continue-match" class="btn-primary btn-block hidden" style="margin-top:16px;" onclick="continueToMatch()">Comenzar</button>
   </div>
 
   <!-- Pantalla: turno de votar (solo modo local, se pasa el dispositivo) -->
   <div id="screen-vote-handoff" class="handoff hidden">
+    <div class="match-timer" id="vote-handoff-timer">--:--</div>
     <p style="color: var(--muted);">Turno de votar:</p>
     <div class="name" id="vote-handoff-name"></div>
     <p style="color: var(--muted); font-size: 0.9rem; margin-bottom: 16px;">Tocá a quién creés que es el impostor</p>
@@ -349,9 +345,9 @@
   <!-- Pantalla: partida en curso (timer + discusión / votación / resultado) -->
   <div id="screen-match" class="card hidden">
     <div class="match-round-label" id="match-round-label"></div>
-    <div id="match-timer-wrapper">
-      <div class="match-timer" id="match-timer">--:--</div>
-    </div>
+    <div id="match-timer-wrapper" class="hidden">
+    <div class="match-timer" id="match-timer">--:--</div>
+  </div>
 
     <!-- Tarjeta de rol: visible durante toda la partida (solo modo online) -->
     <div id="match-role-card" class="reveal-card unrevealed" onclick="flipMatchCard()" style="aspect-ratio: auto; padding: 20px; margin-bottom: 16px;">
@@ -360,7 +356,8 @@
 
     <!-- Subvista: discusión -->
     <div id="match-discuss" class="hidden">
-      <p style="text-align:center; color: var(--muted); margin-bottom: 16px;">Discutan en persona quién puede ser el impostor.</p>
+      <p style="text-align:center; color: var(--muted); margin-bottom: 16px;">Cada uno diga una palabra relacionada a la palabra secreta, para descubrir quién es el impostor.</p>
+      <button id="btn-begin-vote" class="btn-primary btn-block" onclick="beginVote()">Votar</button>
     </div>
 
     <!-- Subvista: votación (online) -->
@@ -579,7 +576,6 @@
     const numSpies = parseInt(document.getElementById('input-num-spies').value, 10);
     const categoryValue = document.getElementById('select-category').value;
     const categoryId = categoryValue ? parseInt(categoryValue, 10) : null;
-    const discussSeconds = Math.round(parseFloat(document.getElementById('input-discuss-seconds').value) * 60);
     const voteSeconds = Math.round(parseFloat(document.getElementById('input-vote-seconds').value) * 60);
     const roundsToWin = localPlayers.length > 6
       ? parseInt(document.getElementById('input-rounds-to-win-local').value, 10)
@@ -591,7 +587,7 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           host_token: hostToken, num_spies: numSpies, category_id: categoryId,
-          discuss_seconds: discussSeconds, vote_seconds: voteSeconds, rounds_to_win: roundsToWin
+          discuss_seconds: 60, vote_seconds: voteSeconds, rounds_to_win: roundsToWin
         })
       });
       if (!res.ok) throw new Error((await res.json()).detail);
@@ -667,6 +663,8 @@
   }
 
   function startHostPolling() {
+    stopMatchPolling();
+    stopLobbyPolling();
     refreshHostPlayers();
     hostPollTimer = setInterval(refreshHostPlayers, 2000);
   }
@@ -690,7 +688,6 @@
     const numSpies = parseInt(document.getElementById('input-host-num-spies').value, 10);
     const categoryValue = document.getElementById('select-host-category').value;
     const categoryId = categoryValue ? parseInt(categoryValue, 10) : null;
-    const discussSeconds = Math.round(parseFloat(document.getElementById('input-host-discuss-seconds').value) * 60);
     const voteSeconds = Math.round(parseFloat(document.getElementById('input-host-vote-seconds').value) * 60);
     const roundsToWinWrapperVisible = !document.getElementById('rounds-to-win-wrapper-host').classList.contains('hidden');
     const roundsToWin = roundsToWinWrapperVisible
@@ -703,7 +700,7 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           host_token: hostToken, num_spies: numSpies, category_id: categoryId,
-          discuss_seconds: discussSeconds, vote_seconds: voteSeconds, rounds_to_win: roundsToWin
+          discuss_seconds: 60, vote_seconds: voteSeconds, rounds_to_win: roundsToWin
         })
       });
       if (!res.ok) throw new Error((await res.json()).detail);
@@ -754,6 +751,7 @@
   }
 
   async function pollForStart() {
+    stopMatchPolling();
     try {
       const res = await fetch(`${API_BASE}/rooms/${roomCode}`);
       const data = await res.json();
@@ -872,6 +870,8 @@
 
   // ==================== TABLERO DE PARTIDA (timer + fases) ====================
   function startMatchPolling() {
+    stopLobbyPolling();
+    stopMatchPolling();
     refreshMatch();
     matchPollTimer = setInterval(refreshMatch, 1000);
   }
@@ -896,12 +896,11 @@
   }
 
   function updateTimerDisplay(remainingSeconds) {
-    const el = document.getElementById('match-timer');
-    if (remainingSeconds == null) {
-      el.textContent = '--:--';
-      return;
-    }
-    el.textContent = `⏱ ${formatSeconds(remainingSeconds)}`;
+    const text = remainingSeconds == null ? '--:--' : `⏱ ${formatSeconds(remainingSeconds)}`;
+    ['match-timer', 'vote-handoff-timer'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = text;
+    });
   }
 
   function hideAllMatchSubviews() {
@@ -928,10 +927,15 @@
 
     if (state.phase === "discuss") {
       hideAllMatchSubviews();
+      document.getElementById('match-timer-wrapper').classList.add('hidden');
+      roleCard.classList.remove('hidden');
       document.getElementById('match-discuss').classList.remove('hidden');
+      document.getElementById('btn-begin-vote').classList.toggle('hidden', !hostToken);
 
     } else if (state.phase === "vote") {
       hideAllMatchSubviews();
+      document.getElementById('match-timer-wrapper').classList.remove('hidden');
+      roleCard.classList.remove('hidden');
       if (mode === "local") {
         if (isNewPhase) {
           startLocalVoteHandoff(state);
@@ -945,6 +949,8 @@
 
     } else if (state.phase === "round_result" || state.phase === "finished") {
       hideAllMatchSubviews();
+      document.getElementById('match-timer-wrapper').classList.add('hidden');
+      roleCard.classList.add('hidden');
       document.getElementById('match-result').classList.remove('hidden');
       renderRoundResult(state);
 
@@ -1012,6 +1018,14 @@
     }
   }
 
+  async function beginVote() {
+  try {
+    await fetch(`${API_BASE}/rooms/${roomCode}/begin-vote?host_token=${hostToken}`, { method: 'POST' });
+  } catch (e) {
+    showError(e.message);
+  }
+}
+
   // ---------- Votación local (se pasa el dispositivo) ----------
   function startLocalVoteHandoff(state) {
     voteHandoffOrder = state.players.filter(p => p.alive).map(p => p.player_id);
@@ -1023,7 +1037,9 @@
     if (voteHandoffIndex >= voteHandoffOrder.length) {
       showScreen('match');
       hideAllMatchSubviews();
+      document.getElementById('match-timer-wrapper').classList.add('hidden');
       document.getElementById('match-vote-local-waiting').classList.remove('hidden');
+      refreshMatch(); // consulta el resultado ya mismo, sin esperar el próximo chequeo automático
       return;
     }
     const voterId = voteHandoffOrder[voteHandoffIndex];

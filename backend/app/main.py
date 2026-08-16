@@ -126,6 +126,19 @@ def reset_room(code: str, host_token: str):
         raise HTTPException(403, str(err))
     return {"status": "lobby"}
 
+@app.post("/rooms/{code}/begin-vote")
+def begin_vote(code: str, host_token: str):
+    try:
+        room = room_manager.get_room(code)
+        room.begin_vote(host_token)
+    except KeyError:
+        raise HTTPException(404, "Sala no encontrada")
+    except PermissionError as err:
+        raise HTTPException(403, str(err))
+    except ValueError as err:
+        raise HTTPException(400, str(err))
+    return {"status": "ok"}
+
 
 # Servimos el frontend directamente desde el backend, en el mismo puerto.
 # Esto evita que el navegador trate front y back como "orígenes" distintos
