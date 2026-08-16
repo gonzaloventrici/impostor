@@ -228,7 +228,7 @@
   <!-- Pantalla: elegir modo -->
   <div id="screen-mode" class="card">
     <div class="mode-choice">
-      <button class="btn-primary btn-block" onclick="goLocal()">📱 Un dispositivo (pasar y jugar)</button>
+      <button class="btn-primary btn-block" onclick="goLocal()">📱 Un dispositivo</button>
       <button class="btn-secondary btn-block" onclick="goOnlineHost()">🌐 Cada uno desde su celular</button>
       <button class="btn-secondary btn-block" onclick="goOnlineJoin()">🔑 Unirme con un código</button>
     </div>
@@ -297,7 +297,7 @@
         <input type="number" id="input-host-vote-seconds" min="0.5" step="0.5" value="1">
 
         <div id="rounds-to-win-wrapper-host" class="hidden">
-          <label>Rondas para que gane el impostor (grupos de más de 6)</label>
+          <label>Rondas para que gane el impostor</label>
           <input type="number" id="input-rounds-to-win-host" min="1" value="2">
         </div>
       </div>
@@ -354,14 +354,9 @@
       <div class="hint">Tocá para ver tu rol de nuevo</div>
     </div>
 
-    <!-- Subvista: discusión -->
-    <div id="match-discuss" class="hidden">
-      <p style="text-align:center; color: var(--muted); margin-bottom: 16px;">Cada uno diga una palabra relacionada a la palabra secreta, para descubrir quién es el impostor.</p>
-      <button id="btn-begin-vote" class="btn-primary btn-block" onclick="beginVote()">Votar</button>
-    </div>
-
     <!-- Subvista: votación (online) -->
     <div id="match-vote-online" class="hidden">
+      <p style="text-align:center; color: var(--muted); margin-bottom: 12px;">Cada uno diga una palabra relacionada a la palabra secreta, para descubrir quién es el impostor. Cuando estén listos, voten.</p>
       <p style="text-align:center; color: var(--muted); margin-bottom: 12px;">Tocá a quién querés votar</p>
       <ul id="match-vote-list" class="player-list"></ul>
       <p id="match-vote-confirm" class="waiting-text hidden"></p>
@@ -904,8 +899,11 @@
   }
 
   function hideAllMatchSubviews() {
-    ['match-discuss', 'match-vote-online', 'match-vote-local-waiting', 'match-result']
-      .forEach(id => document.getElementById(id).classList.add('hidden'));
+    ['match-vote-online', 'match-vote-local-waiting', 'match-result']
+      .forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.classList.add('hidden');
+      });
   }
 
   let lastCardRoundNumber = null;
@@ -913,7 +911,7 @@
   function renderMatch(state) {
     updateTimerDisplay(state.remaining_seconds);
     document.getElementById('match-round-label').textContent =
-      `Ronda ${state.round_number} · para ganar el impostor: ${state.rounds_to_win}`;
+      `Ronda ${state.round_number} de ${state.rounds_to_win}`;
 
     const roleCard = document.getElementById('match-role-card');
     roleCard.style.display = (mode === "local") ? "none" : "flex";
@@ -925,14 +923,7 @@
     const stateKey = `${state.phase}-${state.round_number}`;
     const isNewPhase = stateKey !== renderedPhaseKey;
 
-    if (state.phase === "discuss") {
-      hideAllMatchSubviews();
-      document.getElementById('match-timer-wrapper').classList.add('hidden');
-      roleCard.classList.remove('hidden');
-      document.getElementById('match-discuss').classList.remove('hidden');
-      document.getElementById('btn-begin-vote').classList.toggle('hidden', !hostToken);
-
-    } else if (state.phase === "vote") {
+    if (state.phase === "vote") {
       hideAllMatchSubviews();
       document.getElementById('match-timer-wrapper').classList.remove('hidden');
       roleCard.classList.remove('hidden');
@@ -948,6 +939,7 @@
       }
 
     } else if (state.phase === "round_result" || state.phase === "finished") {
+      if (isNewPhase) showScreen('match');
       hideAllMatchSubviews();
       document.getElementById('match-timer-wrapper').classList.add('hidden');
       roleCard.classList.add('hidden');
@@ -1093,7 +1085,6 @@
       banner.innerHTML = `
         <div class="result-banner ${spyClass}">
           <div class="title">${title}</div>
-          <div style="margin-top:8px; font-size:0.9rem;">La palabra de esta ronda era: <b>${result.word.toUpperCase()}</b></div>
         </div>`;
     } else {
       banner.innerHTML = '';
@@ -1103,7 +1094,7 @@
       const isCrew = state.winner === 'crew';
       winBox.innerHTML = `
         <div class="win-banner ${isCrew ? 'crew' : 'spies'}">
-          <div class="title">${isCrew ? '🎉 GANÓ EL CREW' : '🕵️ GANÓ EL IMPOSTOR'}</div>
+          <div class="title">${isCrew ? '🎉 EL IMPOSTOR HA SIDO ELIMINADO' : '🕵️ GANÓ EL IMPOSTOR'}</div>
         </div>`;
 
       if (mode === "online-host" || mode === "local") {

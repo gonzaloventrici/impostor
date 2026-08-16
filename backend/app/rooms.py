@@ -132,8 +132,8 @@ class Room:
         self._pick_word()
         self.votes = {}
         self.last_round_result = None
-        self.phase = "discuss"
-        self.phase_ends_at = None
+        self.phase = "vote"
+        self.phase_ends_at = time.monotonic() + self.vote_seconds
 
     # ------------------------------------------------------------------ #
     # Avance de fases (perezoso, sin hilos en background)
